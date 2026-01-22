@@ -1,0 +1,11 @@
+{
+  "name": "com.unbug.uniframework",
+  "displayName": "UniFramework",
+  "author": "un-bug",
+  "version": "0.0.1",
+  "unity": "2022.3",
+  "description": "Unity Game Development Framework.",
+  "dependencies": {
+    "com.unity.addressables": "1.22.3"
+  }
+}
