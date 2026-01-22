@@ -9,7 +9,7 @@ namespace UniFramework.Runtime
 
     public abstract class UniFrameworkModule<T> : MonoSingleton<T>, IUniFrameworkModule where T : MonoSingleton<T>
     {
-        public virtual int Priority => 100;
+        public virtual int Priority => 0;
         public virtual void OnUpdate(float deltaTime) { }
         public virtual void Shutdown() { }
     }

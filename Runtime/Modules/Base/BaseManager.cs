@@ -4,7 +4,7 @@ namespace UniFramework.Runtime
 {
     public sealed class BaseManager : UniFrameworkModule<BaseManager>
     {
-        public override int Priority => 0;
+        public override int Priority => int.MaxValue;
 
         private void Update()
         {
