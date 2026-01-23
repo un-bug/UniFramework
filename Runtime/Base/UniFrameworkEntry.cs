@@ -40,6 +40,16 @@ namespace UniFramework.Runtime
             }
 
             T newModule = factory?.Invoke();
+            
+            try
+            {
+                newModule.Initialize();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"module '{type.FullName}' initialize failed.", ex);
+            }
+
             RegisterModule(newModule);
             return newModule;
         }
