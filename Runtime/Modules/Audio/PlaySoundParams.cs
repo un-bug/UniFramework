@@ -3,29 +3,29 @@ namespace UniFramework.Runtime
     public struct PlaySoundParams
     {
         /// <summary>
-        /// ������С (0.0 ~ 1.0)��Ĭ�� 1.0��
+        /// 音量大小 (0.0 ~ 1.0)，默认 1.0。
         /// </summary>
         public float Volume;
 
         /// <summary>
-        /// �Ƿ�ѭ��������Ч��true ��ʾѭ����
+        /// 是否循环播放音效，true 表示循环。
         /// </summary>
         public bool Loop;
 
         /// <summary>
-        /// ����ʱ�䣨�룩��������� 0������Ч��� 0 ������ָ��ʱ���ڵ��뵽Ŀ��������
+        /// 渐入时间（秒）。如果大于 0，则音效会从 0 音量在指定时间内淡入到目标音量。
         /// </summary>
         public float FadeInSeconds;
 
         /// <summary>
-        /// 2D/3D ��ϱ��� (0.0 ~ 1.0)��
-        /// 0 ��ʾ��ȫ 2D������λ�ñ仯����1 ��ʾ��ȫ 3D����λ�ñ仯����
-        /// Ĭ�Ͽ���Ϊ 0��
+        /// 2D/3D 混合比率 (0.0 ~ 1.0)。
+        /// 0 表示完全 2D（不随位置变化），1 表示完全 3D（随位置变化）。
+        /// 默认可设为 0。
         /// </summary>
         public float SpatialBlend;
 
         /// <summary>
-        /// ��ȡһ�� <see cref="PlaySoundParams"/> ��Ĭ�ϲ������á�
+        /// 获取一个 <see cref="PlaySoundParams"/> 的默认参数配置。
         /// </summary>
         public static PlaySoundParams Default => new PlaySoundParams
         {
