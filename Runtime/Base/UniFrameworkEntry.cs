@@ -40,6 +40,10 @@ namespace UniFramework.Runtime
             }
 
             T newModule = factory?.Invoke();
+            if (newModule == null)
+            {
+                return default;
+            }
             
             try
             {
