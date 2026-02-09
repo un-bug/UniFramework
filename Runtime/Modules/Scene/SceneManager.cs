@@ -79,8 +79,9 @@ namespace UniFramework.Runtime
             // end loadScene.
 
             var mainSceneInstance = mainHandle.Result;
+            yield return null;
             yield return mainSceneInstance.ActivateAsync();
-
+            yield return null;
             foreach (string addScene in addScenes)
             {
                 var addHandle = Addressables.LoadSceneAsync(addScene, LoadSceneMode.Additive);

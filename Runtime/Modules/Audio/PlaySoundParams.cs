@@ -8,6 +8,11 @@ namespace UniFramework.Runtime
         public float Volume;
 
         /// <summary>
+        /// 音调，默认 1.0。范围通常在 0.5 到 2.0 之间。
+        /// </summary>
+        public float Pitch;
+
+        /// <summary>
         /// 是否循环播放音效，true 表示循环。
         /// </summary>
         public bool Loop;
@@ -31,6 +36,7 @@ namespace UniFramework.Runtime
         {
             Volume = 1.0f,
             Loop = false,
+            Pitch = 1.0f,
             FadeInSeconds = 0f,
             SpatialBlend = 0f
         };

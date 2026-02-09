@@ -174,6 +174,7 @@ namespace UniFramework.Runtime
                 audioSource.outputAudioMixerGroup = GetAudioMixerGroup(string.Format("{0}", soundGroup));
                 audioSource.clip = audioClip;
                 audioSource.volume = playSoundParams.Volume;
+                audioSource.pitch = playSoundParams.Pitch;
                 audioSource.loop = playSoundParams.Loop;
                 audioSource.spatialBlend = playSoundParams.SpatialBlend;
                 audioSource.Play();
