@@ -2,6 +2,6 @@
 {
     public interface IUIRoot
     {
-        T GetUIPanel<T>() where T : UIPanel;
+        T LoadUIPanel<T>() where T : UIPanel;
     }
 }

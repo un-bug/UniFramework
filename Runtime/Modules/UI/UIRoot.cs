@@ -12,7 +12,9 @@ namespace UniFramework.Runtime
         [SerializeField]
         private UIGroupData[] m_UIGroups = new UIGroupData[] { new UIGroupData("Default", 0) };
 
-        private readonly Dictionary<Type, UIPanel> m_CachedUIPanels = new Dictionary<Type, UIPanel>();
+        [SerializeField]
+        private List<UIPanel> m_UIPanels = new List<UIPanel>();
+
         private UIManager m_UIManager;
 
         public Canvas UICanvas
@@ -42,9 +44,11 @@ namespace UniFramework.Runtime
                 AddUIGroupRoot(uiGroup.Name, uiGroup.Depth);
             }
 
-            foreach (var uiPanel in GetComponentsInChildren<UIPanel>(true))
+            m_UIPanels.Clear();
+            m_UIPanels.AddRange(GetComponentsInChildren<UIPanel>(true));
+            foreach (var uiPanel in m_UIPanels)
             {
-                Register(uiPanel);
+                RegisterUIPanel(uiPanel);
             }
         }
 
@@ -55,26 +59,35 @@ namespace UniFramework.Runtime
                 return;
             }
 
-            var uiPanels = new List<UIPanel>(m_CachedUIPanels.Values);
-            foreach (var panel in uiPanels)
+            for (int i = m_UIPanels.Count - 1; i >= 0; i--)
             {
+                UIPanel panel = m_UIPanels[i];
                 if (panel != null)
                 {
-                    Unregister(panel);
+                    UnregisterUIPanel(panel);
                 }
             }
         }
 
-        public T GetUIPanel<T>() where T : UIPanel
+        private void OnValidate()
         {
-            return m_CachedUIPanels.TryGetValue(typeof(T), out var panel) ? panel as T : null;
+            m_UIPanels = new List<UIPanel>(GetComponentsInChildren<UIPanel>(true));
         }
 
-        public void AddUIPanel(UIPanel uiPanel) => Register(uiPanel);
+        public T LoadUIPanel<T>() where T : UIPanel
+        {
+            for (int i = 0; i < m_UIPanels.Count; i++)
+            {
+                if (m_UIPanels[i] is T panel)
+                {
+                    return panel;
+                }
+            }
 
-        public void RemoveUIPanel(UIPanel uiPanel) => Unregister(uiPanel);
+            return null;
+        }
 
-        private void Register(UIPanel uiPanel)
+        public void RegisterUIPanel(UIPanel uiPanel)
         {
             if (uiPanel == null)
             {
@@ -83,19 +96,20 @@ namespace UniFramework.Runtime
 
             uiPanel.gameObject.SetActive(false);
             uiPanel.Visible = false;
-
             Type panelType = uiPanel.GetType();
-
-            if (m_CachedUIPanels.TryGetValue(panelType, out var existingPanel) && existingPanel != null)
+            for (int i = 0; i < m_UIPanels.Count; i++)
             {
-                Debug.LogWarning($"[{nameof(UIManager)}] Duplicate panel already registered: {panelType.Name}.");
-                return;
+                if (m_UIPanels[i] != null && m_UIPanels[i].GetType() == panelType)
+                {
+                    Debug.LogWarning($"[{nameof(UIManager)}] Duplicate panel already registered: {panelType.Name}.");
+                    return;
+                }
             }
 
-            m_CachedUIPanels[panelType] = uiPanel;
+            m_UIPanels.Add(uiPanel);
         }
 
-        private void Unregister(UIPanel uiPanel)
+        public void UnregisterUIPanel(UIPanel uiPanel)
         {
             if (uiPanel == null)
             {
@@ -103,7 +117,7 @@ namespace UniFramework.Runtime
             }
 
             uiPanel.Visible = false;
-            m_CachedUIPanels.Remove(uiPanel.GetType());
+            m_UIPanels.Remove(uiPanel);
         }
 
         public void AddUIGroupRoot(string groupName, int depth)

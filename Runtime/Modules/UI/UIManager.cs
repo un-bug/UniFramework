@@ -183,7 +183,7 @@ namespace UniFramework.Runtime
                 throw new InvalidOperationException($"[{nameof(UIManager)}] ui root is invalid.");
             }
 
-            return m_UIRoot.GetUIPanel<T>();
+            return m_UIRoot.LoadUIPanel<T>();
         }
 
         private void AttachPanelToGroup<T>(T uiPanel, UIGroup uiGroup) where T : UIPanel
