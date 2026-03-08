@@ -26,7 +26,7 @@ namespace UniFramework
 
                 if (s_IsShutDown)
                 {
-                    Debug.LogWarning($"instance of {typeof(T).Name} already destroyed. Returning null.");
+                    Debug.LogWarning($"[MonoSingleton] instance of {typeof(T).Name} already destroyed. Returning null.");
                     return null;
                 }
 
@@ -52,8 +52,8 @@ namespace UniFramework
             }
 
             s_Instance = this as T;
-            Debug.Log($"{typeof(T).Name} initialized.");
-            OnInit();
+            Debug.Log($"[MonoSingleton] {typeof(T).Name} created.", gameObject);
+            OnCreate();
         }
 
         private void OnDestroy()
@@ -62,7 +62,7 @@ namespace UniFramework
             {
                 OnDispose();
                 s_Instance = null;
-                Debug.Log($"{typeof(T).Name} disposed.");
+                Debug.Log($"[MonoSingleton] {typeof(T).Name} disposed.");
             }
         }
 
@@ -71,7 +71,7 @@ namespace UniFramework
             s_IsShutDown = true;
         }
 
-        protected virtual void OnInit() { }
+        protected virtual void OnCreate() { }
 
         protected virtual void OnDispose() { }
     }

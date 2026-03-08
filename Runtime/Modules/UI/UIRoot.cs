@@ -1,9 +1,10 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace UniFramework.Runtime
 {
-    public class UIRoot : MonoBehaviour
+    public class UIRoot : MonoBehaviour, IUIRoot
     {
         [SerializeField]
         private Canvas m_UICanvas;
@@ -11,7 +12,7 @@ namespace UniFramework.Runtime
         [SerializeField]
         private UIGroupData[] m_UIGroups = new UIGroupData[] { new UIGroupData("Default", 0) };
 
-        private List<UIPanel> m_UIPanels = new List<UIPanel>();
+        private readonly Dictionary<Type, UIPanel> m_CachedUIPanels = new Dictionary<Type, UIPanel>();
         private UIManager m_UIManager;
 
         public Canvas UICanvas
@@ -24,13 +25,14 @@ namespace UniFramework.Runtime
 
         private void Awake()
         {
-            m_UIManager = GameEntry.UI;
+            m_UIManager = UIManager.Instance;
             if (m_UIManager == null)
             {
                 return;
             }
 
-            if (!m_UICanvas)
+            m_UIManager.SetUIRoot(this);
+            if (m_UICanvas == null)
             {
                 m_UICanvas = GetComponentInChildren<Canvas>();
             }
@@ -40,14 +42,8 @@ namespace UniFramework.Runtime
                 AddUIGroupRoot(uiGroup.Name, uiGroup.Depth);
             }
 
-            m_UIPanels.AddRange(GetComponentsInChildren<UIPanel>(true));
-            foreach (var uiPanel in m_UIPanels)
+            foreach (var uiPanel in GetComponentsInChildren<UIPanel>(true))
             {
-                if (uiPanel == null)
-                {
-                    continue;
-                }
-
                 Register(uiPanel);
             }
         }
@@ -59,7 +55,8 @@ namespace UniFramework.Runtime
                 return;
             }
 
-            foreach (var panel in m_UIPanels)
+            var uiPanels = new List<UIPanel>(m_CachedUIPanels.Values);
+            foreach (var panel in uiPanels)
             {
                 if (panel != null)
                 {
@@ -68,27 +65,16 @@ namespace UniFramework.Runtime
             }
         }
 
-        public void AddPanel(UIPanel uiPanel)
+        public T GetUIPanel<T>() where T : UIPanel
         {
-            if (!m_UIPanels.Contains(uiPanel))
-            {
-                m_UIPanels.Add(uiPanel);
-            }
-
-            Register(uiPanel);
+            return m_CachedUIPanels.TryGetValue(typeof(T), out var panel) ? panel as T : null;
         }
 
-        public void RemovePanel(UIPanel uiPanel)
-        {
-            if (m_UIPanels.Contains(uiPanel))
-            {
-                m_UIPanels.Remove(uiPanel);
-            }
+        public void AddUIPanel(UIPanel uiPanel) => Register(uiPanel);
 
-            Unregister(uiPanel);
-        }
+        public void RemoveUIPanel(UIPanel uiPanel) => Unregister(uiPanel);
 
-        public void Register(UIPanel uiPanel)
+        private void Register(UIPanel uiPanel)
         {
             if (uiPanel == null)
             {
@@ -96,17 +82,28 @@ namespace UniFramework.Runtime
             }
 
             uiPanel.gameObject.SetActive(false);
-            m_UIManager.RegisterUIPanel(uiPanel);
+            uiPanel.Visible = false;
+
+            Type panelType = uiPanel.GetType();
+
+            if (m_CachedUIPanels.TryGetValue(panelType, out var existingPanel) && existingPanel != null)
+            {
+                Debug.LogWarning($"[{nameof(UIManager)}] Duplicate panel already registered: {panelType.Name}.");
+                return;
+            }
+
+            m_CachedUIPanels[panelType] = uiPanel;
         }
 
-        public void Unregister(UIPanel uiPanel)
+        private void Unregister(UIPanel uiPanel)
         {
             if (uiPanel == null)
             {
                 return;
             }
 
-            m_UIManager.UnregisterUIPanel(uiPanel);
+            uiPanel.Visible = false;
+            m_CachedUIPanels.Remove(uiPanel.GetType());
         }
 
         public void AddUIGroupRoot(string groupName, int depth)
@@ -116,8 +113,11 @@ namespace UniFramework.Runtime
                 return;
             }
 
-            var rootObject = new GameObject($"UI Group - {groupName}");
-            rootObject.gameObject.layer = LayerMask.NameToLayer("UI");
+            var rootObject = new GameObject($"UI Group - {groupName}")
+            {
+                layer = LayerMask.NameToLayer("UI")
+            };
+
             rootObject.transform.SetParent(m_UICanvas.transform, false);
             RectTransform rectTransform = rootObject.AddComponent<RectTransform>();
             rectTransform.anchorMin = Vector2.zero;
@@ -127,14 +127,5 @@ namespace UniFramework.Runtime
             rectTransform.SetSiblingIndex(depth);
             m_UIManager.AddGroup(groupName, depth, rootObject.transform);
         }
-
-        //public static void StretchFull(RectTransform rectTransform)
-        //{
-        //    rectTransform.anchorMin = Vector2.zero;
-        //    rectTransform.anchorMax = Vector2.one;
-        //    rectTransform.anchoredPosition = Vector2.zero;
-        //    rectTransform.sizeDelta = Vector2.zero;
-        //    rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        //}
     }
 }

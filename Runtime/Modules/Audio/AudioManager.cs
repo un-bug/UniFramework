@@ -24,7 +24,7 @@ namespace UniFramework.Runtime
         private IObjectPool<AudioSource> m_AudioSourceItemPool;
         private int m_Serial;
 
-        protected override void OnInit()
+        protected override void OnModuleInitialize()
         {
             if (m_Settings == null)
             {
@@ -32,16 +32,16 @@ namespace UniFramework.Runtime
             }
 
             InjectSettings(m_Settings, true);
-            base.OnInit();
+            base.OnModuleInitialize();
         }
 
-        protected override void OnDispose()
+        protected override void OnModuleShutdown()
         {
             m_AudioSourceItemPool.Clear();
             m_PlayingAudioSources.Clear();
             m_PauseResumeVolumes.Clear();
             m_OriginalVolumes.Clear();
-            base.OnDispose();
+            base.OnModuleShutdown();
         }
 
         public void InjectSettings(AudioManagerSettings settings, bool recreatePool = false)

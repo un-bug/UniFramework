@@ -13,7 +13,7 @@ namespace UniFramework.Runtime
         [SerializeField]
         private bool m_Covered = true;
 
-        public virtual bool PauseCoveredUIPanel => true;
+        protected internal virtual bool PauseCoveredUIPanel => true;
 
         public bool Visible
         {
@@ -33,7 +33,7 @@ namespace UniFramework.Runtime
             }
         }
 
-        public bool Paused
+        protected internal bool Paused
         {
             get
             {
@@ -45,7 +45,7 @@ namespace UniFramework.Runtime
             }
         }
 
-        public bool Covered
+        protected internal bool Covered
         {
             get
             {
@@ -62,43 +62,43 @@ namespace UniFramework.Runtime
             UIManager.Instance.CloseUIPanel(this);
         }
 
-        public virtual void OnInit(object userData)
+        protected internal virtual void OnInit(object userData)
         {
         }
 
-        public virtual void OnRelease()
+        protected internal virtual void OnRelease()
         {
         }
 
-        public virtual void OnOpen(object userData)
-        {
-            Visible = true;
-        }
-
-        public virtual void OnClose()
-        {
-            Visible = false;
-        }
-
-        public virtual void OnResume()
+        protected internal virtual void OnOpen(object userData)
         {
             Visible = true;
         }
 
-        public virtual void OnPause()
+        protected internal virtual void OnClose()
         {
             Visible = false;
         }
 
-        public virtual void OnReveal()
+        protected internal virtual void OnResume()
+        {
+            Visible = true;
+        }
+
+        protected internal virtual void OnPause()
+        {
+            Visible = false;
+        }
+
+        protected internal virtual void OnReveal()
         {
         }
 
-        public virtual void OnCover()
+        protected internal virtual void OnCover()
         {
         }
 
-        public virtual void OnRefocus(object userData)
+        protected internal virtual void OnRefocus(object userData)
         {
         }
     }

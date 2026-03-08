@@ -21,10 +21,15 @@ namespace UniFramework.Runtime
         private DefaultLoadingScreen m_DefaultLoadingScreen = null;
         private bool m_IsLoading = false;
 
-        protected override void OnInit()
+        protected override void OnModuleInitialize()
         {
-            base.OnInit();
+            base.OnModuleInitialize();
             m_DefaultLoadingScreen = new DefaultLoadingScreen();
+        }
+
+        protected override void OnModuleShutdown()
+        {
+            base.OnModuleShutdown();
         }
 
         public void SetLoadingScreen(ILoadingScreen loadingScreen)

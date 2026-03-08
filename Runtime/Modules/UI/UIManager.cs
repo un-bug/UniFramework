@@ -11,18 +11,17 @@ namespace UniFramework.Runtime
         public event Action<UIPanel> CloseUIPanelComplete;
 
         private Dictionary<string, UIGroup> m_UIGroups;
-        private Dictionary<Type, UIPanel> m_CachedUIPanels;
         private Dictionary<UIPanel, UIGroup> m_UIPanelInfo;
+        private IUIRoot m_UIRoot;
 
-        protected override void OnInit()
+        protected override void OnModuleInitialize()
         {
-            base.OnInit();
-            m_CachedUIPanels = new Dictionary<Type, UIPanel>();
+            base.OnModuleInitialize();
             m_UIPanelInfo = new Dictionary<UIPanel, UIGroup>();
             m_UIGroups = new Dictionary<string, UIGroup>();
         }
 
-        protected override void OnDispose()
+        protected override void OnModuleShutdown()
         {
             CloseAllUIPanels();
             foreach (UIGroup uiGroup in m_UIGroups.Values)
@@ -31,9 +30,19 @@ namespace UniFramework.Runtime
             }
 
             m_UIGroups.Clear();
-            m_CachedUIPanels.Clear();
             m_UIPanelInfo.Clear();
-            base.OnDispose();
+            base.OnModuleShutdown();
+        }
+
+        public void SetUIRoot(IUIRoot uiRoot)
+        {
+            if (uiRoot == null)
+            {
+                Debug.LogError($"[{nameof(UIManager)}] ui root is invalid.");
+                return;
+            }
+
+            m_UIRoot = uiRoot;
         }
 
         public bool HasUIPanel(UIPanel uiPanel)
@@ -41,7 +50,17 @@ namespace UniFramework.Runtime
             return uiPanel != null && m_UIPanelInfo.ContainsKey(uiPanel);
         }
 
-        public T OpenUIPanel<T>(string uiGroupName = "Default", object userData = null) where T : UIPanel
+        public T OpenUIPanel<T>() where T : UIPanel
+        {
+            return OpenUIPanel<T>("Default", default);
+        }
+
+        public T OpenUIPanel<T>(object userData) where T : UIPanel
+        {
+            return OpenUIPanel<T>("Default", userData);
+        }
+
+        public T OpenUIPanel<T>(string uiGroupName, object userData) where T : UIPanel
         {
             Type type = typeof(T);
             UIGroup uiGroup = GetUIGroup(uiGroupName);
@@ -157,56 +176,14 @@ namespace UniFramework.Runtime
             m_UIGroups.Add(groupName, group);
         }
 
-        public bool RegisterUIPanel(UIPanel uiPanel)
-        {
-            if (uiPanel == null)
-            {
-                return false;
-            }
-
-            uiPanel.Visible = false;
-            Type panelType = uiPanel.GetType();
-            if (m_CachedUIPanels.TryGetValue(panelType, out UIPanel existingUIPanel))
-            {
-                if (existingUIPanel == null)
-                {
-                    m_CachedUIPanels[panelType] = existingUIPanel;
-                }
-                else
-                {
-                    Debug.LogWarning($"[{nameof(UIManager)}] duplicate panel already registered: {panelType.Name}.");
-                }
-
-                return false;
-            }
-            else
-            {
-                m_CachedUIPanels.Add(panelType, uiPanel);
-                return true;
-            }
-        }
-
-        public void UnregisterUIPanel(UIPanel uiPanel)
-        {
-            if (uiPanel == null)
-            {
-                return;
-            }
-
-            uiPanel.Visible = false;
-            Type panelType = uiPanel.GetType();
-            m_CachedUIPanels.Remove(panelType);
-        }
-
         public T GetCachedUIPanel<T>() where T : UIPanel
         {
-            Type type = typeof(T);
-            if (m_CachedUIPanels.TryGetValue(type, out UIPanel cachedPanel))
+            if (m_UIRoot == null)
             {
-                return cachedPanel as T;
+                throw new InvalidOperationException($"[{nameof(UIManager)}] ui root is invalid.");
             }
 
-            return default(T);
+            return m_UIRoot.GetUIPanel<T>();
         }
 
         private void AttachPanelToGroup<T>(T uiPanel, UIGroup uiGroup) where T : UIPanel

@@ -27,42 +27,20 @@ namespace UniFramework.Runtime
             s_GameDevKitModules.Clear();
         }
 
-        public static T GetModule<T>(Func<T> factory) where T : UniFrameworkModule<T>
-        {
-            EnsureModuleRegistered();
-            Type type = typeof(T);
-            foreach (var module in s_GameDevKitModules)
-            {
-                if (module.GetType() == type)
-                {
-                    return module as T;
-                }
-            }
-
-            T newModule = factory?.Invoke();
-            if (newModule == null)
-            {
-                return default;
-            }
-            
-            try
-            {
-                newModule.Initialize();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"module '{type.FullName}' initialize failed.", ex);
-            }
-
-            RegisterModule(newModule);
-            return newModule;
-        }
-
-        private static T RegisterModule<T>(T module) where T : UniFrameworkModule<T>
+        internal static T RegisterModule<T>(T module) where T : IUniFrameworkModule
         {
             if (module == null)
             {
                 throw new ArgumentNullException(nameof(module), "module instance cannot be null.");
+            }
+
+            try
+            {
+                module.Initialize();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"module '{module.Type.FullName}' initialize failed.", ex);
             }
 
             var current = s_GameDevKitModules.First;
@@ -87,21 +65,24 @@ namespace UniFramework.Runtime
 
             return module;
         }
-        
-        private static void EnsureModuleRegistered()
+
+        internal static void UnregisterModule(IUniFrameworkModule module)
         {
-            foreach (var module in s_GameDevKitModules)
+            if (module == null)
             {
-                if (module.GetType() == typeof(BaseManager))
-                {
-                    return;
-                }
+                throw new ArgumentNullException(nameof(module), "module instance cannot be null.");
             }
 
-            var baseModule = BaseManager.Instance;
-            if (baseModule != null)
+            if (s_GameDevKitModules.Remove(module))
             {
-                RegisterModule(baseModule);
+                try
+                {
+                    module.Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"module '{module.Type.FullName}' shutdown failed.", ex);
+                }
             }
         }
     }
