@@ -14,14 +14,14 @@ namespace UniFramework.Runtime
         private Dictionary<UIPanel, UIGroup> m_UIPanelInfo;
         private IUIRoot m_UIRoot;
 
-        protected override void OnModuleInitialize()
+        protected override void Initialize()
         {
-            base.OnModuleInitialize();
+            base.Initialize();
             m_UIPanelInfo = new Dictionary<UIPanel, UIGroup>();
             m_UIGroups = new Dictionary<string, UIGroup>();
         }
 
-        protected override void OnModuleShutdown()
+        protected override void Shutdown()
         {
             CloseAllUIPanels();
             foreach (UIGroup uiGroup in m_UIGroups.Values)
@@ -31,7 +31,7 @@ namespace UniFramework.Runtime
 
             m_UIGroups.Clear();
             m_UIPanelInfo.Clear();
-            base.OnModuleShutdown();
+            base.Shutdown();
         }
 
         public void SetUIRoot(IUIRoot uiRoot)

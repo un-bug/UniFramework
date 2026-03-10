@@ -41,20 +41,20 @@ namespace UniFramework.Runtime
             base.OnDispose();
         }
 
-        protected virtual void OnModuleInitialize()
+        protected virtual void Initialize()
         {
         }
 
-        protected virtual void OnModuleShutdown()
+        protected virtual void Shutdown()
         {
         }
 
-        public virtual void OnModuleUpdate(float deltaTime)
+        public virtual void OnUpdate(float deltaTime)
         {
         }
 
-        void IUniFrameworkModule.Initialize() => OnModuleInitialize();
-        void IUniFrameworkModule.Shutdown() => OnModuleShutdown();
-        void IUniFrameworkModule.OnUpdate(float deltaTime) => OnModuleUpdate(deltaTime);
+        void IUniFrameworkModule.Initialize() => Initialize();
+        void IUniFrameworkModule.Shutdown() => Shutdown();
+        void IUniFrameworkModule.OnUpdate(float deltaTime) => OnUpdate(deltaTime);
     }
 }

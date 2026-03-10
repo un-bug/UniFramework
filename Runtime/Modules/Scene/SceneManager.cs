@@ -33,14 +33,14 @@ namespace UniFramework.Runtime
             }
         }
 
-        protected override void OnModuleInitialize()
+        protected override void Initialize()
         {
-            base.OnModuleInitialize();
+            base.Initialize();
         }
 
-        protected override void OnModuleShutdown()
+        protected override void Shutdown()
         {
-            base.OnModuleShutdown();
+            base.Shutdown();
         }
 
         public void SetSceneLoadingScreen(ISceneLoadingScreen loadingScreen)
