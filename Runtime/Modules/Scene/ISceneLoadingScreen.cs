@@ -2,7 +2,7 @@
 
 namespace UniFramework.Runtime
 {
-    public interface ILoadingScreen
+    public interface ISceneLoadingScreen
     {
         void OnSceneLoadBegin(string mainScene, string[] addScenes, object userData);
         IEnumerator OnScenePreload(string mainScene, string[] addScenes, object userData);

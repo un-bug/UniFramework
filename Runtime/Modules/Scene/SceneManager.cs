@@ -17,14 +17,14 @@ namespace UniFramework.Runtime
         public event LoadSceneSuccessHandler LoadSceneSuccess;
         public event LoadSceneFailedHandler LoadSceneFailed;
 
-        private ILoadingScreen m_LoadingScreen = null;
-        private DefaultLoadingScreen m_DefaultLoadingScreen = null;
+        private ISceneLoadingScreen m_SceneLoadingScreen = null;
+        private DefaultSceneLoadingScreen m_DefaultLoadingScreen = null;
         private bool m_IsLoading = false;
 
         protected override void OnModuleInitialize()
         {
             base.OnModuleInitialize();
-            m_DefaultLoadingScreen = new DefaultLoadingScreen();
+            m_DefaultLoadingScreen = new DefaultSceneLoadingScreen();
         }
 
         protected override void OnModuleShutdown()
@@ -32,9 +32,9 @@ namespace UniFramework.Runtime
             base.OnModuleShutdown();
         }
 
-        public void SetLoadingScreen(ILoadingScreen loadingScreen)
+        public void SetSceneLoadingScreen(ISceneLoadingScreen loadingScreen)
         {
-            m_LoadingScreen = loadingScreen;
+            m_SceneLoadingScreen = loadingScreen;
             Debug.Log($"[SceneManager] setting loading screen: {loadingScreen}");
         }
 
@@ -67,7 +67,7 @@ namespace UniFramework.Runtime
 
         private IEnumerator LoadSceneInternal(string mainScene, string[] addScenes, object userData)
         {
-            ILoadingScreen sceneTransition = m_LoadingScreen ?? m_DefaultLoadingScreen;
+            ISceneLoadingScreen sceneTransition = m_SceneLoadingScreen ?? m_DefaultLoadingScreen;
             sceneTransition?.OnSceneLoadBegin(mainScene, addScenes, userData);
             Debug.Log("[SceneManager] asset preloading...");
             yield return sceneTransition?.OnScenePreload(mainScene, addScenes, userData);

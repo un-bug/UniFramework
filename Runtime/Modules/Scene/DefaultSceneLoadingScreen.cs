@@ -2,7 +2,7 @@
 
 namespace UniFramework.Runtime
 {
-    public class DefaultLoadingScreen : ILoadingScreen
+    internal class DefaultSceneLoadingScreen : ISceneLoadingScreen
     {
         public void OnSceneLoadBegin(string mainScene, string[] addScenes, object userData)
         {
