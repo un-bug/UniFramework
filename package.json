@@ -1,0 +1,14 @@
+{
+  "name": "com.un-bug.uniframework",
+  "version": "1.0.0",
+  "displayName": "UniFramework",
+  "description": "A modular framework for Unity game development.",
+  "unity": "2022.3",
+  "dependencies": {
+    "com.unity.ugui": "1.0.0"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "un-bug"
+  }
+}
