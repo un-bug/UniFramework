@@ -15,7 +15,7 @@ namespace UniFramework.Runtime
 
         private string m_UIPanelAssetName;
         protected internal virtual bool PauseCoveredUIPanel => true;
-        internal string UIPanelAssetName => m_UIPanelAssetName;
+        protected internal string UIPanelAssetName => m_UIPanelAssetName;
         
         public bool Visible
         {

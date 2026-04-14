@@ -4,25 +4,20 @@ using UnityEngine;
 
 namespace UniFramework.Runtime
 {
-    [DefaultExecutionOrder(-10)]
-    public abstract class UIRootBase : MonoBehaviour
+    public interface IUIRoot
     {
-        public abstract T LoadUIPanel<T>() where T : UIPanel;
+        UIPanel LoadUIPanel(string uiPanelAssetName);
     }
 
-    public class UIRoot : UIRootBase
+    [DefaultExecutionOrder(-10)]
+    public class UIRoot : MonoBehaviour, IUIRoot
     {
-        [SerializeField]
-        private Canvas m_UICanvas;
-
-        [SerializeField]
-        private UIGroupData[] m_UIGroups = new UIGroupData[] { new UIGroupData("Default", 0) };
-
-        [SerializeField]
-        private List<UIPanel> m_UIPanels = new List<UIPanel>();
-
+        [SerializeField] private Canvas m_UICanvas;
+        [SerializeField] private UIGroupData[] m_UIGroups = new UIGroupData[] { new UIGroupData("Default", 0) };
         private UIManager m_UIManager;
-
+        private IAssetLoader m_AssetLoader;
+        private Dictionary<string, UIPanel> m_CacheUIPanels;
+        
         public Canvas UICanvas
         {
             set
@@ -31,14 +26,10 @@ namespace UniFramework.Runtime
             }
         }
 
-        private void Awake()
+        protected virtual void Awake()
         {
             m_UIManager = UIManager.Instance;
-            if (m_UIManager == null)
-            {
-                return;
-            }
-
+            m_AssetLoader = AssetLoaderFactory.Get();
             m_UIManager.SetUIRoot(this);
             if (m_UICanvas == null)
             {
@@ -50,82 +41,44 @@ namespace UniFramework.Runtime
                 AddUIGroupRoot(uiGroup.Name, uiGroup.Depth);
             }
 
-            m_UIPanels.Clear();
-            m_UIPanels.AddRange(GetComponentsInChildren<UIPanel>(true));
-            foreach (var uiPanel in m_UIPanels)
-            {
-                RegisterUIPanel(uiPanel);
-            }
+            m_CacheUIPanels = new Dictionary<string, UIPanel>();
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
-            if (m_UIManager == null)
-            {
-                return;
-            }
+            AssetLoaderFactory.Release(m_AssetLoader);
+            m_AssetLoader = null;
+        }
 
-            for (int i = m_UIPanels.Count - 1; i >= 0; i--)
+        public UIPanel LoadUIPanel(string uiPanelAssetName)
+        {
+            if (m_CacheUIPanels.TryGetValue(uiPanelAssetName, out UIPanel uiPanel))
             {
-                UIPanel panel = m_UIPanels[i];
-                if (panel != null)
+                if (uiPanel != null)
                 {
-                    UnregisterUIPanel(panel);
-                }
-            }
-        }
-
-        private void OnValidate()
-        {
-            m_UIPanels = new List<UIPanel>(GetComponentsInChildren<UIPanel>(true));
-        }
-
-        public override T LoadUIPanel<T>()
-        {
-            for (int i = 0; i < m_UIPanels.Count; i++)
-            {
-                if (m_UIPanels[i] is T panel)
-                {
-                    return panel;
+                    return uiPanel;
                 }
             }
 
-            return null;
-        }
-
-        public void RegisterUIPanel(UIPanel uiPanel)
-        {
-            if (uiPanel == null)
+            var uiPanelAsset = m_AssetLoader.Load<GameObject>(uiPanelAssetName);
+            if (uiPanelAsset == null)
             {
-                return;
+                Debug.LogError($"[UIRoot] ui panel asset '{uiPanelAssetName}' is not exist.");
+                return null;
             }
 
-            uiPanel.gameObject.SetActive(false);
-            uiPanel.Visible = false;
-            Type panelType = uiPanel.GetType();
-            for (int i = 0; i < m_UIPanels.Count; i++)
+            GameObject uiPanelInstanceObject = Instantiate(uiPanelAsset);
+            if (!uiPanelInstanceObject.TryGetComponent(out uiPanel))
             {
-                if (m_UIPanels[i] != null && m_UIPanels[i].GetType() == panelType)
-                {
-                    Debug.LogWarning($"[{nameof(UIManager)}] Duplicate panel already registered: {panelType.Name}.");
-                    return;
-                }
+                Debug.LogError($"[UIRoot] ui panel '{uiPanelAssetName}' is invalid.");
+                Destroy(uiPanelInstanceObject);
+                return null;
             }
 
-            m_UIPanels.Add(uiPanel);
+            m_CacheUIPanels[uiPanelAssetName] = uiPanel;
+            return uiPanel;
         }
-
-        public void UnregisterUIPanel(UIPanel uiPanel)
-        {
-            if (uiPanel == null)
-            {
-                return;
-            }
-
-            uiPanel.Visible = false;
-            m_UIPanels.Remove(uiPanel);
-        }
-
+        
         public void AddUIGroupRoot(string groupName, int depth)
         {
             if (!m_UICanvas)

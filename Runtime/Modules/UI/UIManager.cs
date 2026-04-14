@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,13 +12,11 @@ namespace UniFramework.Runtime
 
         private Dictionary<string, UIGroup> m_UIGroups;
         private Dictionary<UIPanel, UIGroup> m_UIPanelInfo;
-        private UIRootBase m_UIRoot;
-        private IAssetLoader m_AssetLoader;
+        private IUIRoot m_UIRoot;
 
         protected override void OnInit()
         {
             base.OnInit();
-            m_AssetLoader = AssetLoaderFactory.Get();
             m_UIPanelInfo = new Dictionary<UIPanel, UIGroup>();
             m_UIGroups = new Dictionary<string, UIGroup>();
         }
@@ -34,11 +31,10 @@ namespace UniFramework.Runtime
 
             m_UIGroups.Clear();
             m_UIPanelInfo.Clear();
-            AssetLoaderFactory.Release(m_AssetLoader);
             base.OnDispose();
         }
 
-        public void SetUIRoot(UIRootBase uiRoot)
+        public void SetUIRoot(IUIRoot uiRoot)
         {
             if (uiRoot == null)
             {
@@ -69,46 +65,23 @@ namespace UniFramework.Runtime
             return false;
         }
 
-        public T OpenUIPanel<T>() where T : UIPanel
+        public UIPanel OpenUIPanel(string uiPanelAssetName)
         {
-            return OpenUIPanel<T>("Default", default);
+            return OpenUIPanel(uiPanelAssetName, "Default", null);
         }
 
-        public T OpenUIPanel<T>(object userData) where T : UIPanel
+        public UIPanel OpenUIPanel(string uiPanelAssetName, object userData)
         {
-            return OpenUIPanel<T>("Default", userData);
+            return OpenUIPanel(uiPanelAssetName, "Default", userData);
         }
 
-        public T OpenUIPanel<T>(string uiGroupName, object userData) where T : UIPanel
+        public UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName, object userData)
         {
-            Type type = typeof(T);
-            UIGroup uiGroup = GetUIGroup(uiGroupName);
-            if (uiGroup == null)
+            if (m_UIRoot == null)
             {
-                Debug.LogError($"[UIManager] ui group '{uiGroupName}' is not exist.");
-                return null;
+                throw new InvalidOperationException($"[UIManager] ui root is invalid.");
             }
 
-            T uiPanel = GetCachedUIPanel<T>();
-            if (uiPanel == null)
-            {
-                Debug.LogError($"[UIManager] ui panel '{typeof(T)}' is not registered.");
-                return null;
-            }
-
-            if (HasUIPanel(uiPanel))
-            {
-                RefocusUIPanel(uiPanel, userData);
-                return uiPanel;
-            }
-
-            AttachPanelToGroup(uiPanel, uiGroup);
-            InternalOpenUIPanel(uiPanel, uiGroup, userData);
-            return uiPanel;
-        }
-
-        public UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName, bool pauseCoveredUIPanel, object userData)
-        {
             UIGroup uiGroup = GetUIGroup(uiGroupName);
             if (uiGroup == null)
             {
@@ -122,18 +95,9 @@ namespace UniFramework.Runtime
                 return uiPanel;
             }
 
-            var uiPanelAsset = m_AssetLoader.Load<GameObject>(uiPanelAssetName);
-            if (uiPanelAsset == null)
+            uiPanel = m_UIRoot.LoadUIPanel(uiPanelAssetName);
+            if (uiPanel == null)
             {
-                Debug.LogError($"[UIManager] ui panel asset '{uiPanelAssetName}' is not exist.");
-                return null;
-            }
-
-            GameObject uiPanelInstanceObject = Instantiate(uiPanelAsset);
-            if (!uiPanelInstanceObject.TryGetComponent(out uiPanel))
-            {
-                Debug.LogError($"[UIManager] ui panel '{uiPanelAssetName}' is invalid.");
-                Destroy(uiPanelInstanceObject);
                 return null;
             }
 
@@ -229,16 +193,6 @@ namespace UniFramework.Runtime
 
             var group = new UIGroup(groupName, depth, instanceRoot);
             m_UIGroups.Add(groupName, group);
-        }
-
-        public T GetCachedUIPanel<T>() where T : UIPanel
-        {
-            if (m_UIRoot == null)
-            {
-                throw new InvalidOperationException($"[UIManager] ui root is invalid.");
-            }
-
-            return m_UIRoot.LoadUIPanel<T>();
         }
 
         private void AttachPanelToGroup<T>(T uiPanel, UIGroup uiGroup) where T : UIPanel
