@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace UniFramework.Runtime
@@ -73,8 +71,10 @@ namespace UniFramework.Runtime
             s_IsShutDown = true;
         }
 
-        protected virtual void OnInit() { }
+        protected virtual void OnInit()
+        { }
 
-        protected virtual void OnDispose() { }
+        protected virtual void OnDispose()
+        { }
     }
 }
