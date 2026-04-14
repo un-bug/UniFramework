@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace UniFramework.Runtime
 {
+    [DisallowMultipleComponent]
     public sealed class UIManager : MonoSingleton<UIManager>
     {
         public event Action<UIPanel> OpenUIPanelSuccess;
@@ -13,10 +14,12 @@ namespace UniFramework.Runtime
         private Dictionary<string, UIGroup> m_UIGroups;
         private Dictionary<UIPanel, UIGroup> m_UIPanelInfo;
         private UIRootBase m_UIRoot;
+        private IAssetLoader m_AssetLoader;
 
         protected override void OnInit()
         {
             base.OnInit();
+            m_AssetLoader = AssetLoaderFactory.Get();
             m_UIPanelInfo = new Dictionary<UIPanel, UIGroup>();
             m_UIGroups = new Dictionary<string, UIGroup>();
         }
@@ -31,6 +34,7 @@ namespace UniFramework.Runtime
 
             m_UIGroups.Clear();
             m_UIPanelInfo.Clear();
+            AssetLoaderFactory.Release(m_AssetLoader);
             base.OnDispose();
         }
 
@@ -48,6 +52,21 @@ namespace UniFramework.Runtime
         public bool HasUIPanel(UIPanel uiPanel)
         {
             return uiPanel != null && m_UIPanelInfo.ContainsKey(uiPanel);
+        }
+
+        public bool TryGetUIPanel(string uiPanelAssetName, out UIPanel uiPanel)
+        {
+            foreach (var panel in m_UIPanelInfo.Keys)
+            {
+                if (panel != null && panel.UIPanelAssetName == uiPanelAssetName)
+                {
+                    uiPanel = panel;
+                    return true;
+                }
+            }
+
+            uiPanel = null;
+            return false;
         }
 
         public T OpenUIPanel<T>() where T : UIPanel
@@ -83,6 +102,35 @@ namespace UniFramework.Runtime
                 return uiPanel;
             }
 
+            AttachPanelToGroup(uiPanel, uiGroup);
+            InternalOpenUIPanel(uiPanel, uiGroup, userData);
+            return uiPanel;
+        }
+
+        public UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName, bool pauseCoveredUIPanel, object userData)
+        {
+            UIGroup uiGroup = GetUIGroup(uiGroupName);
+            if (uiGroup == null)
+            {
+                Debug.LogError($"[UIManager] ui group '{uiGroupName}' is not exist.");
+                return null;
+            }
+
+            if (TryGetUIPanel(uiPanelAssetName, out UIPanel uiPanel))
+            {
+                RefocusUIPanel(uiPanel, userData);
+                return uiPanel;
+            }
+
+            var uiPanelInstanceObject = Instantiate(m_AssetLoader.Load<GameObject>(uiPanelAssetName));
+            if (!uiPanelInstanceObject.TryGetComponent(out uiPanel))
+            {
+                Debug.LogError($"[UIManager] ui panel '{uiPanelAssetName}' is invalid.");
+                Destroy(uiPanelInstanceObject);
+                return null;
+            }
+
+            uiPanel.Initialize(uiPanelAssetName);
             AttachPanelToGroup(uiPanel, uiGroup);
             InternalOpenUIPanel(uiPanel, uiGroup, userData);
             return uiPanel;

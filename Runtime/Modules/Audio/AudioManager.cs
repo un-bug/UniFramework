@@ -9,6 +9,7 @@ namespace UniFramework.Runtime
 {
     public delegate void PlaySoundHandler(int serialId, AudioSource source, object userData);
 
+    [DisallowMultipleComponent]
     public sealed class AudioManager : MonoSingleton<AudioManager>
     {
         [SerializeField]

@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace UniFramework.Runtime
 {
+    [DefaultExecutionOrder(-10)]
     public abstract class UIRootBase : MonoBehaviour
     {
         public abstract T LoadUIPanel<T>() where T : UIPanel;

@@ -13,8 +13,10 @@ namespace UniFramework.Runtime
         [SerializeField]
         private bool m_Covered = true;
 
+        private string m_UIPanelAssetName;
         protected internal virtual bool PauseCoveredUIPanel => true;
-
+        internal string UIPanelAssetName => m_UIPanelAssetName;
+        
         public bool Visible
         {
             get
@@ -60,6 +62,11 @@ namespace UniFramework.Runtime
         public virtual void CloseSelf()
         {
             UIManager.Instance.CloseUIPanel(this);
+        }
+
+        internal void Initialize(string uiPanelAssetName)
+        {
+            m_UIPanelAssetName = uiPanelAssetName;
         }
 
         protected internal virtual void OnInit(object userData)
