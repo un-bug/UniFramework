@@ -122,7 +122,14 @@ namespace UniFramework.Runtime
                 return uiPanel;
             }
 
-            var uiPanelInstanceObject = Instantiate(m_AssetLoader.Load<GameObject>(uiPanelAssetName));
+            var uiPanelAsset = m_AssetLoader.Load<GameObject>(uiPanelAssetName);
+            if (uiPanelAsset == null)
+            {
+                Debug.LogError($"[UIManager] ui panel asset '{uiPanelAssetName}' is not exist.");
+                return null;
+            }
+
+            GameObject uiPanelInstanceObject = Instantiate(uiPanelAsset);
             if (!uiPanelInstanceObject.TryGetComponent(out uiPanel))
             {
                 Debug.LogError($"[UIManager] ui panel '{uiPanelAssetName}' is invalid.");
