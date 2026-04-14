@@ -16,14 +16,6 @@ namespace UniFramework.Editor
             uiRoot.UICanvas = uiCanvas;
             GameObjectUtility.SetParentAndAlign(uiCanvas.gameObject, uiRoot.gameObject);
 
-            RectTransform uiPanelRoot = new GameObject("Hide Panel").AddComponent<RectTransform>();
-            uiPanelRoot.anchorMin = Vector2.zero;
-            uiPanelRoot.anchorMax = Vector2.one;
-            uiPanelRoot.anchoredPosition = Vector2.zero;
-            uiPanelRoot.sizeDelta = Vector2.zero;
-            uiPanelRoot.gameObject.SetActive(false);
-            GameObjectUtility.SetParentAndAlign(uiPanelRoot.gameObject, uiCanvas.gameObject);
-
             Undo.RegisterCreatedObjectUndo(uiRoot.gameObject, "Create UI Root");
             Selection.activeGameObject = uiRoot.gameObject;
         }
