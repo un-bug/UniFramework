@@ -4,16 +4,11 @@ namespace UniFramework.Runtime
 {
     public class UIPanel : MonoBehaviour
     {
-        [SerializeField]
         private bool m_Visible = false;
-
-        [SerializeField]
         private bool m_Paused = true;
-
-        [SerializeField]
         private bool m_Covered = true;
-
         private string m_UIPanelAssetName;
+
         protected internal virtual bool PauseCoveredUIPanel => true;
         protected internal string UIPanelAssetName => m_UIPanelAssetName;
         

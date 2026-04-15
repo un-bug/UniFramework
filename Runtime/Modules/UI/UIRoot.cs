@@ -13,18 +13,15 @@ namespace UniFramework.Runtime
     public class UIRoot : MonoBehaviour, IUIRoot
     {
         [SerializeField] private Canvas m_UICanvas;
-        [SerializeField] private UIGroupData[] m_UIGroups = new UIGroupData[] { new UIGroupData("Default", 0) };
+        [SerializeField] private Transform m_InstanceRoot;
+        [SerializeField] private UIGroupData[] m_UIGroups;
+
         private UIManager m_UIManager;
         private IAssetLoader m_AssetLoader;
         private Dictionary<string, UIPanel> m_CacheUIPanels;
         
-        public Canvas UICanvas
-        {
-            set
-            {
-                m_UICanvas = value;
-            }
-        }
+        public Canvas UICanvas { get { return m_UICanvas; } set { m_UICanvas = value; } }
+        public Transform InstanceRoot { get => m_InstanceRoot; set => m_InstanceRoot = value; }
 
         protected virtual void Awake()
         {
@@ -36,6 +33,7 @@ namespace UniFramework.Runtime
                 m_UICanvas = GetComponentInChildren<Canvas>();
             }
 
+            AddUIGroupRoot("Default", 0);
             foreach (var uiGroup in m_UIGroups)
             {
                 AddUIGroupRoot(uiGroup.Name, uiGroup.Depth);
@@ -83,7 +81,13 @@ namespace UniFramework.Runtime
         {
             if (!m_UICanvas)
             {
+                Debug.LogError($"[UIRoot] UICanvas is not assigned.");
                 return;
+            }
+
+            if (m_InstanceRoot == null)
+            {
+                m_InstanceRoot = m_UICanvas.transform;
             }
 
             var rootObject = new GameObject($"UI Group - {groupName}")
@@ -91,7 +95,7 @@ namespace UniFramework.Runtime
                 layer = LayerMask.NameToLayer("UI")
             };
 
-            rootObject.transform.SetParent(m_UICanvas.transform, false);
+            rootObject.transform.SetParent(m_InstanceRoot, false);
             RectTransform rectTransform = rootObject.AddComponent<RectTransform>();
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;
