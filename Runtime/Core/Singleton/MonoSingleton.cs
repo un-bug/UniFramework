@@ -71,10 +71,18 @@ namespace UniFramework.Runtime
             s_IsShutDown = true;
         }
 
+        private void Update()
+        {
+            OnUpdate(Time.deltaTime);
+        }
+
         protected virtual void OnInit()
         { }
 
         protected virtual void OnDispose()
+        { }
+
+        protected virtual void OnUpdate(float deltaTime)
         { }
     }
 }
