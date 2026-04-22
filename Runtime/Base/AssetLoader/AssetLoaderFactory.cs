@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public static class AssetLoaderFactory
     {
