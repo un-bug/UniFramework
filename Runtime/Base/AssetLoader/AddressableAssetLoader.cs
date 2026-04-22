@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Object = UnityEngine.Object;
-
-public interface IAssetLoader : IDisposable
-{
-    T Load<T>(string key) where T : Object;
-    void Release(string key);
-}
 
 public class AddressableAssetLoader : IAssetLoader
 {
@@ -25,6 +18,7 @@ public class AddressableAssetLoader : IAssetLoader
         m_Handles[key] = handle;
         return handle.Result;
     }
+
     public void Release(string key)
     {
         if (m_Handles.TryGetValue(key, out var handle))
@@ -42,26 +36,5 @@ public class AddressableAssetLoader : IAssetLoader
         }
 
         m_Handles.Clear();
-    }
-}
-
-public static class AssetLoaderFactory
-{
-    public static IAssetLoader Get()
-    {
-        return new AddressableAssetLoader();
-    }
-
-    public static void Release(IAssetLoader assetLoader)
-    {
-        if (assetLoader == null)
-        {
-            return;
-        }
-
-        if (assetLoader is IDisposable disposable)
-        {
-            disposable.Dispose();
-        }
     }
 }
