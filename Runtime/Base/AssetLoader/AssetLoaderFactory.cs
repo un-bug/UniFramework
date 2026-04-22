@@ -1,22 +1,25 @@
 ﻿using System;
 
-public static class AssetLoaderFactory
+namespace UniFramework.Runtime
 {
-    public static IAssetLoader Get()
+    public static class AssetLoaderFactory
     {
-        return new AddressableAssetLoader();
-    }
-
-    public static void Release(IAssetLoader assetLoader)
-    {
-        if (assetLoader == null)
+        public static IAssetLoader Get()
         {
-            return;
+            return new AddressableAssetLoader();
         }
 
-        if (assetLoader is IDisposable disposable)
+        public static void Release(IAssetLoader assetLoader)
         {
-            disposable.Dispose();
+            if (assetLoader == null)
+            {
+                return;
+            }
+
+            if (assetLoader is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
     }
 }
