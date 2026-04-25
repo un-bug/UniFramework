@@ -4,39 +4,60 @@ namespace UniFramework
 {
     public class AddressableAssetLoader : IAssetLoader
     {
-        private Dictionary<string, UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationHandle> m_Handles = new();
+        private sealed class AssetHandleInfo
+        {
+            public UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationHandle Handle;
+            public int ReferenceCount;
+
+            public AssetHandleInfo(UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationHandle handle)
+            {
+                Handle = handle;
+                ReferenceCount = 1;
+            }
+        }
+
+        private Dictionary<string, AssetHandleInfo> m_AssetHandleInfos = new();
 
         public T Load<T>(string key) where T : UnityEngine.Object
         {
-            if (m_Handles.TryGetValue(key, out var existingHandle))
+            if (m_AssetHandleInfos.TryGetValue(key, out AssetHandleInfo assetHandleInfo))
             {
-                return (T)existingHandle.Result;
+                assetHandleInfo.ReferenceCount++;
+                return (T)assetHandleInfo.Handle.Result;
             }
 
             var handle = UnityEngine.AddressableAssets.Addressables.LoadAssetAsync<T>(key);
             handle.WaitForCompletion();
 
-            m_Handles[key] = handle;
+            m_AssetHandleInfos.Add(key, new AssetHandleInfo(handle));
             return handle.Result;
         }
 
         public void Release(string key)
         {
-            if (m_Handles.TryGetValue(key, out var handle))
+            if (!m_AssetHandleInfos.TryGetValue(key, out AssetHandleInfo assetHandleInfo))
             {
-                UnityEngine.AddressableAssets.Addressables.Release(handle);
-                m_Handles.Remove(key);
+                return;
             }
+
+            assetHandleInfo.ReferenceCount--;
+            if (assetHandleInfo.ReferenceCount > 0)
+            {
+                return;
+            }
+
+            UnityEngine.AddressableAssets.Addressables.Release(assetHandleInfo.Handle);
+            m_AssetHandleInfos.Remove(key);
         }
 
         public void Dispose()
         {
-            foreach (var handle in m_Handles.Values)
+            foreach (AssetHandleInfo assetHandleInfo in m_AssetHandleInfos.Values)
             {
-                UnityEngine.AddressableAssets.Addressables.Release(handle);
+                UnityEngine.AddressableAssets.Addressables.Release(assetHandleInfo.Handle);
             }
 
-            m_Handles.Clear();
+            m_AssetHandleInfos.Clear();
         }
     }
 }
