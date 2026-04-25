@@ -20,6 +20,11 @@ namespace UniFramework.Runtime
         protected override void OnDispose()
         {
             base.OnDispose();
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            {
+                entityGroup.Shutdown();
+            }
+
             m_EntityGroups.Clear();
             m_RecycleQueue.Clear();
         }
@@ -27,20 +32,8 @@ namespace UniFramework.Runtime
         protected override void OnUpdate(float deltaTime)
         {
             base.OnUpdate(deltaTime);
-            while (m_RecycleQueue.Count > 0)
-            {
-                Entity entity = m_RecycleQueue.Dequeue();
-                EntityGroup entityGroup = (EntityGroup)entity.EntityGroup;
-                if (entityGroup == null)
-                {
-                    throw new Exception($"Can not recycle entity '{entity.Id}' because it is invalid.");
-                }
-
-                entity.OnRecycle();
-                entityGroup.UnspawnEntity(entity);
-            }
-
-            foreach (var entityGroup in m_EntityGroups.Values)
+            ProcessRecycleQueue();
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
             {
                 entityGroup.OnUpdate(deltaTime);
             }
@@ -136,6 +129,22 @@ namespace UniFramework.Runtime
 
             entityGroup.RemoveEntity(entity);
             m_RecycleQueue.Enqueue(entity);
+        }
+
+        private void ProcessRecycleQueue()
+        {
+            while (m_RecycleQueue.Count > 0)
+            {
+                Entity entity = m_RecycleQueue.Dequeue();
+                EntityGroup entityGroup = (EntityGroup)entity.EntityGroup;
+                if (entityGroup == null)
+                {
+                    throw new Exception($"Can not recycle entity '{entity.Id}' because it is invalid.");
+                }
+
+                entity.OnRecycle();
+                entityGroup.UnspawnEntity(entity);
+            }
         }
     }
 }
