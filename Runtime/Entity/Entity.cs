@@ -48,14 +48,14 @@ namespace UniFramework.Runtime
             Id = 0;
         }
 
-        public void OnSpawn()
+        public void OnShow()
         {
-            EntityLogic.OnSpawn();
+            EntityLogic.OnShow();
         }
 
-        public void OnDespawn()
+        public void OnHide()
         {
-            EntityLogic.OnDespawn();
+            EntityLogic.OnHide();
         }
 
         public void OnUpdate()

@@ -93,7 +93,7 @@ namespace UniFramework.Runtime
             Entity[] entities = entityGroup.GetAllEntities();
             foreach (var entity in entities)
             {
-                DespawnEntity(entity);
+                HideEntity(entity);
             }
 
             entityGroup.Shutdown();
@@ -101,7 +101,7 @@ namespace UniFramework.Runtime
             return true;
         }
 
-        public Entity SpawnEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName)
+        public Entity ShowEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName)
         {
             EntityGroup entityGroup = (EntityGroup)GetEntityGroup(entityGroupName);
             if (entityGroup == null)
@@ -109,25 +109,25 @@ namespace UniFramework.Runtime
                 throw new Exception($"Can not spawn entity because entity group '{entityGroupName}' is invalid.");
             }
 
-            return InternalSpawnEntity(entityId, entityLogicType, entityAssetKey, entityGroup);
+            return InternalShowEntity(entityId, entityLogicType, entityAssetKey, entityGroup);
         }
 
-        public void DespawnEntity(Entity entity)
+        public void HideEntity(Entity entity)
         {
-            InternalDespawnEntity(entity);
+            InternalHideEntity(entity);
         }
 
-        private Entity InternalSpawnEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup)
+        private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup)
         {
             Entity entity = entityGroup.SpawnEntity(entityAssetKey);
             entity.OnInit(entityId, entityLogicType, entityAssetKey, entityGroup);
-            entity.OnSpawn();
+            entity.OnShow();
             return entity;
         }
 
-        private void InternalDespawnEntity(Entity entity)
+        private void InternalHideEntity(Entity entity)
         {
-            entity.OnDespawn();
+            entity.OnHide();
             EntityGroup entityGroup = entity.EntityGroup;
             if (entityGroup == null)
             {
