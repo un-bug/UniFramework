@@ -53,9 +53,9 @@ namespace UniFramework.Runtime
             EntityLogic.OnShow(userData);
         }
 
-        public void OnHide()
+        public void OnHide(object userData)
         {
-            EntityLogic.OnHide();
+            EntityLogic.OnHide(userData);
         }
 
         public void OnUpdate(float deltaTime)

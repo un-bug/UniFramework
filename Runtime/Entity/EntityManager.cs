@@ -86,7 +86,8 @@ namespace UniFramework.Runtime
             Entity[] entities = entityGroup.GetAllEntities();
             foreach (var entity in entities)
             {
-                HideEntity(entity);
+                // TODO: 这里的 userData 需要改成一个可配置的参数。
+                HideEntity(entity, null);
             }
 
             entityGroup.Shutdown();
@@ -105,9 +106,9 @@ namespace UniFramework.Runtime
             return InternalShowEntity(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
         }
 
-        public void HideEntity(Entity entity)
+        public void HideEntity(Entity entity, object userData)
         {
-            InternalHideEntity(entity);
+            InternalHideEntity(entity, userData);
         }
 
         private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup, object userData)
@@ -118,9 +119,9 @@ namespace UniFramework.Runtime
             return entity;
         }
 
-        private void InternalHideEntity(Entity entity)
+        private void InternalHideEntity(Entity entity, object userData)
         {
-            entity.OnHide();
+            entity.OnHide(userData);
             EntityGroup entityGroup = entity.EntityGroup;
             if (entityGroup == null)
             {

@@ -38,7 +38,7 @@ namespace UniFramework.Runtime
             Visible = true;
         }
 
-        protected internal virtual void OnHide()
+        protected internal virtual void OnHide(object userData)
         {
             Visible = false;
         }
