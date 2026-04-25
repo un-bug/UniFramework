@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Object = UnityEngine.Object;
 
 namespace UniFramework
 {
@@ -7,7 +6,7 @@ namespace UniFramework
     {
         private Dictionary<string, UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationHandle> m_Handles = new();
 
-        public T Load<T>(string key) where T : Object
+        public T Load<T>(string key) where T : UnityEngine.Object
         {
             if (m_Handles.TryGetValue(key, out var existingHandle))
             {
