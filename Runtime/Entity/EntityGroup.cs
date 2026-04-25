@@ -6,7 +6,6 @@ namespace UniFramework.Runtime
 {
     public interface IEntityGroupHelper
     {
-        public Entity SpawnEntityInstance(string entityAssetKey);
     }
 
     public class EntityGroup
