@@ -7,11 +7,60 @@ namespace UniFramework.Runtime
     {
         public int Id { get; private set; }
         public string EntityAssetKey { get; private set; }
+        public EntityGroup EntityGroup { get; private set; }
+        public EntityLogic EntityLogic { get; private set; }
 
-        public void OnInit(int entityId, string entityAssetKey)
+        public void OnInit(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup)
         {
             Id = entityId;
             EntityAssetKey = entityAssetKey;
+            EntityGroup = entityGroup;
+            if (EntityLogic != null)
+            {
+                if (EntityLogic.GetType() == entityLogicType)
+                {
+                    EntityLogic.enabled = true;
+                    return;
+                }
+
+                Destroy(EntityLogic);
+                EntityLogic = null;
+            }
+
+            EntityLogic = gameObject.AddComponent(entityLogicType) as EntityLogic;
+            if (EntityLogic == null)
+            {
+                Debug.LogError($"Entity '{Id}' can not add entity logic.");
+                return;
+            }
+
+            EntityLogic.OnInit();
+        }
+
+        public void OnRecycle()
+        {
+            EntityLogic.OnRecycle();
+            if (EntityLogic != null)
+            {
+                EntityLogic.enabled = false;
+            }
+
+            Id = 0;
+        }
+
+        public void OnSpawn()
+        {
+            EntityLogic.OnSpawn();
+        }
+
+        public void OnDespawn()
+        {
+            EntityLogic.OnDespawn();
+        }
+
+        public void OnUpdate()
+        {
+            EntityLogic.OnUpdate();
         }
     }
 }
