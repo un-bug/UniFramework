@@ -10,7 +10,7 @@ namespace UniFramework.Runtime
         public EntityGroup EntityGroup { get; private set; }
         public EntityLogic EntityLogic { get; private set; }
 
-        public void OnInit(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup)
+        public void OnInit(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup, object userData)
         {
             Id = entityId;
             EntityAssetKey = entityAssetKey;
@@ -34,7 +34,7 @@ namespace UniFramework.Runtime
                 return;
             }
 
-            EntityLogic.OnInit();
+            EntityLogic.OnInit(userData);
         }
 
         public void OnRecycle()
@@ -48,9 +48,9 @@ namespace UniFramework.Runtime
             Id = 0;
         }
 
-        public void OnShow()
+        public void OnShow(object userData)
         {
-            EntityLogic.OnShow();
+            EntityLogic.OnShow(userData);
         }
 
         public void OnHide()
@@ -58,9 +58,9 @@ namespace UniFramework.Runtime
             EntityLogic.OnHide();
         }
 
-        public void OnUpdate()
+        public void OnUpdate(float deltaTime)
         {
-            EntityLogic.OnUpdate();
+            EntityLogic.OnUpdate(deltaTime);
         }
     }
 }

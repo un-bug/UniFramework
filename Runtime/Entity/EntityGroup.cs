@@ -59,7 +59,7 @@ namespace UniFramework.Runtime
         {
             foreach (Entity entity in Entities)
             {
-                entity.OnUpdate();
+                entity.OnUpdate(deltaTime);
             }
         }
 

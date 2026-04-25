@@ -24,7 +24,7 @@ namespace UniFramework.Runtime
             }
         }
 
-        protected internal virtual void OnInit()
+        protected internal virtual void OnInit(object userData)
         {
             Entity = GetComponent<Entity>();
         }
@@ -33,7 +33,7 @@ namespace UniFramework.Runtime
         {
         }
 
-        protected internal virtual void OnShow()
+        protected internal virtual void OnShow(object userData)
         {
             Visible = true;
         }
@@ -43,7 +43,7 @@ namespace UniFramework.Runtime
             Visible = false;
         }
 
-        protected internal virtual void OnUpdate()
+        protected internal virtual void OnUpdate(float deltaTime)
         {
         }
 

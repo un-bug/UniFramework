@@ -94,7 +94,7 @@ namespace UniFramework.Runtime
             return true;
         }
 
-        public Entity ShowEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName)
+        public Entity ShowEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName, object userData)
         {
             EntityGroup entityGroup = (EntityGroup)GetEntityGroup(entityGroupName);
             if (entityGroup == null)
@@ -102,7 +102,7 @@ namespace UniFramework.Runtime
                 throw new Exception($"Can not spawn entity because entity group '{entityGroupName}' is invalid.");
             }
 
-            return InternalShowEntity(entityId, entityLogicType, entityAssetKey, entityGroup);
+            return InternalShowEntity(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
         }
 
         public void HideEntity(Entity entity)
@@ -110,11 +110,11 @@ namespace UniFramework.Runtime
             InternalHideEntity(entity);
         }
 
-        private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup)
+        private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup, object userData)
         {
             Entity entity = entityGroup.SpawnEntity(entityAssetKey);
-            entity.OnInit(entityId, entityLogicType, entityAssetKey, entityGroup);
-            entity.OnShow();
+            entity.OnInit(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
+            entity.OnShow(userData);
             return entity;
         }
 
