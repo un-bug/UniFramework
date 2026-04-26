@@ -10,6 +10,7 @@ namespace UniFramework.Runtime
 
     public class EntityGroup
     {
+        private LinkedListNode<Entity> m_CachedNode;
         private IAssetLoader m_AssetLoader;
         public string Name { get; private set; }
         public IEntityGroupHelper Helper { get; private set; }
@@ -20,6 +21,7 @@ namespace UniFramework.Runtime
             Name = name;
             Helper = entityGroupHelper;
             Entities = new LinkedList<Entity>();
+            m_CachedNode = null;
             m_AssetLoader = AssetLoaderFactory.Get();
         }
 
@@ -49,6 +51,11 @@ namespace UniFramework.Runtime
 
         public void RemoveEntity(Entity entity)
         {
+            if (m_CachedNode != null && m_CachedNode.Value == entity)
+            {
+                m_CachedNode = m_CachedNode.Next;
+            }
+
             if (!Entities.Remove(entity))
             {
                 throw new Exception($"EntityGroup remove entity failure, entity id is {entity.Id}.");
@@ -57,9 +64,13 @@ namespace UniFramework.Runtime
 
         public void OnUpdate(float deltaTime)
         {
-            foreach (Entity entity in Entities)
+            LinkedListNode<Entity> current = Entities.First;
+            while (current != null)
             {
-                entity.OnUpdate(deltaTime);
+                m_CachedNode = current.Next;
+                current.Value.OnUpdate(deltaTime);
+                current = m_CachedNode;
+                m_CachedNode = null;
             }
         }
 
