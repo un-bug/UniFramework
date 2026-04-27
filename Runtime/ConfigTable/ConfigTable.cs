@@ -5,24 +5,23 @@ using UnityEngine;
 [System.Serializable]
 public abstract class ConfigTable<T> : ConfigTableBase, IEnumerable<T> where T : ConfigTableRow
 {
-    [SerializeField]
-    private List<T> m_Data;
+    public List<T> Data = new List<T>();
     
-    public int Count => m_Data != null ? m_Data.Count : 0;
+    public int Count => Data != null ? Data.Count : 0;
     
     public bool IsEmpty => Count == 0;
 
-    public T this[int index] => m_Data[index];
+    public T this[int index] => Data[index];
 
-    public IReadOnlyList<T> Rows => m_Data;
+    public IReadOnlyList<T> Rows => Data;
 
     public bool TryGetById(int id, out T row)
     {
-        if (m_Data != null)
+        if (Data != null)
         {
-            for (int i = 0; i < m_Data.Count; i++)
+            for (int i = 0; i < Data.Count; i++)
             {
-                T item = m_Data[i];
+                T item = Data[i];
                 if (item != null && item.ID == id)
                 {
                     row = item;
@@ -53,7 +52,7 @@ public abstract class ConfigTable<T> : ConfigTableBase, IEnumerable<T> where T :
 
     public IEnumerator<T> GetEnumerator()
     {
-        return (m_Data ?? EmptyData()).GetEnumerator();
+        return (Data ?? EmptyData()).GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()

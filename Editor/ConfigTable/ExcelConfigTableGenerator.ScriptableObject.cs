@@ -212,7 +212,7 @@ public sealed partial class ExcelConfigTableGenerator
             dataList.Add(dataObj);
         }
 
-        var mDataField = soObject.GetType().GetField("m_Data", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var mDataField = soObject.GetType().GetField("Data");
         if (mDataField != null)
         {
             var typedList = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dataType));
