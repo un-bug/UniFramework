@@ -212,16 +212,16 @@ public sealed partial class ExcelConfigTableGenerator
             dataList.Add(dataObj);
         }
 
-        var arr = System.Array.CreateInstance(dataType, dataList.Count);
-        for (int i = 0; i < dataList.Count; i++)
-        {
-            arr.SetValue(dataList[i], i);
-        }
-
-        var mDataField = soObject.GetType().GetField("Data");
+        var mDataField = soObject.GetType().GetField("m_Data", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (mDataField != null)
         {
-            mDataField.SetValue(soObject, arr);
+            var typedList = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dataType));
+            for (int i = 0; i < dataList.Count; i++)
+            {
+                typedList.Add(dataList[i]);
+            }
+
+            mDataField.SetValue(soObject, typedList);
         }
 
         EditorUtility.SetDirty(soObject);
