@@ -82,6 +82,7 @@ public sealed partial class ExcelConfigTableGenerator
 
         string className = Path.GetFileNameWithoutExtension(sheetName);
         string rowClassName = GetRowClassName(className);
+        string configClassName = GetConfigClassName(className);
         var sb = new StringBuilder();
         sb.AppendLine("/*");
         sb.AppendLine(" * ===========================================================");
@@ -93,8 +94,6 @@ public sealed partial class ExcelConfigTableGenerator
         sb.AppendLine(" * ===========================================================");
         sb.AppendLine(" */");
         sb.AppendLine();
-
-        sb.AppendLine($"[ConfigTableAttribute(\"{className}\")]");
         sb.AppendLine("[System.Serializable]");
         sb.AppendLine($"public class {rowClassName} : {nameof(ConfigTableRow)}");
         sb.AppendLine("{");
@@ -126,38 +125,20 @@ public sealed partial class ExcelConfigTableGenerator
             sb.AppendLine($"    public {fieldType} {fieldName} => m_{fieldName};");
             sb.AppendLine();
         }
+
+        sb.AppendLine("}");
+        sb.AppendLine();
+        sb.AppendLine($"public class {configClassName} : ConfigTable<{rowClassName}>");
+        sb.AppendLine("{");
         sb.AppendLine("}");
         if (!Directory.Exists(Settings.ClassesOutputFolder))
         {
             Directory.CreateDirectory(Settings.ClassesOutputFolder);
         }
 
-        string filePath = Path.Combine(Settings.ClassesOutputFolder, $"{rowClassName}.cs").Replace("\\", "/");
-        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
-        GenerateConfigTableClass($"{className}", fileName, sheetName);
-        Debug.Log($"Excel class generation: {filePath}");
-    }
-
-    private static void GenerateConfigTableClass(string className, string fileName, string sheetName)
-    {
-        Debug.Log($"Generating ConfigTable class for {className}");
-        string configClassName = GetConfigClassName(className);
-        var sb = new StringBuilder();
-        sb.AppendLine("/*");
-        sb.AppendLine(" * ===========================================================");
-        sb.AppendLine(" * 本文件由表格导出工具自动生成，请勿手动修改。");
-        sb.AppendLine(" * 如需修改，请在对应的 Excel 表格中修改后重新生成。");
-        sb.AppendLine(" * ");
-        sb.AppendLine($" * 源文件: {fileName}");
-        sb.AppendLine($" * 生成时间: {System.DateTime.Now.ToString("yyyy-MM-dd")}");
-        sb.AppendLine(" * ===========================================================");
-        sb.AppendLine(" */");
-        sb.AppendLine();
-        sb.AppendLine($"public class {configClassName} : ConfigTable<{GetRowClassName(className)}>");
-        sb.AppendLine("{");
-        sb.AppendLine("}");
         string filePath = Path.Combine(Settings.ClassesOutputFolder, $"{configClassName}.cs").Replace("\\", "/");
         File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        Debug.Log($"Excel class generation: {filePath}");
     }
 
     private static string GetConfigClassName(string className)
