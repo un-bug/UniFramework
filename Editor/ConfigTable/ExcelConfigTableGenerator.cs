@@ -94,7 +94,6 @@ public sealed partial class ExcelConfigTableGenerator
         sb.AppendLine(" * ===========================================================");
         sb.AppendLine(" */");
         sb.AppendLine();
-        sb.AppendLine($"[ConfigTableAttribute(\"{className}\")]");
         sb.AppendLine("[System.Serializable]");
         sb.AppendLine($"public class {rowClassName} : {nameof(ConfigTableRow)}");
         sb.AppendLine("{");

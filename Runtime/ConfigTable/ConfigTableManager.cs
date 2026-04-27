@@ -19,42 +19,28 @@ namespace UniFramework.Runtime
             AssetLoaderFactory.Release(m_AssetLoader);
         }
 
-        public ConfigTable<T> GetConfigTable<T>(string assetKey) where T : ConfigTableRow
+        public ConfigTable<T> GetConfigTable<T>(string configTableAssetKey) where T : ConfigTableRow
         {
-            if (string.IsNullOrEmpty(assetKey))
+            if (string.IsNullOrEmpty(configTableAssetKey))
             {
                 Debug.LogError($"Config table asset key is empty: {typeof(T).Name}");
                 return null;
             }
 
-            if (m_ConfigTables.TryGetValue(assetKey, out var asset))
+            if (m_ConfigTables.TryGetValue(configTableAssetKey, out var asset))
             {
                 return asset as ConfigTable<T>;
             }
 
-            var configTable = m_AssetLoader.Load<ConfigTable<T>>(assetKey);
+            var configTable = m_AssetLoader.Load<ConfigTable<T>>(configTableAssetKey);
             if (configTable == null)
             {
-                Debug.LogError($"Config table asset not found: {assetKey}");
+                Debug.LogError($"Config table asset not found: {configTableAssetKey}");
                 return null;
             }
 
-            m_ConfigTables[assetKey] = configTable;
+            m_ConfigTables[configTableAssetKey] = configTable;
             return configTable;
-        }
-
-        public static ConfigTableAttribute GetConfigTableAttribute<T>() where T : ConfigTableRow
-        {
-            object[] attributes = typeof(T).GetCustomAttributes(typeof(ConfigTableAttribute), false);
-            for (int i = 0; i < attributes.Length; i++)
-            {
-                if (attributes[i] is ConfigTableAttribute attribute)
-                {
-                    return attribute;
-                }
-            }
-
-            return null;
         }
     }
 }
