@@ -86,7 +86,6 @@ namespace UniFramework.Runtime
             Entity[] entities = entityGroup.GetAllEntities();
             foreach (var entity in entities)
             {
-                // TODO: 这里的 userData 需要改成一个可配置的参数。
                 HideEntity(entity, null);
             }
 
@@ -97,7 +96,7 @@ namespace UniFramework.Runtime
 
         public Entity ShowEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName, object userData)
         {
-            EntityGroup entityGroup = (EntityGroup)GetEntityGroup(entityGroupName);
+            EntityGroup entityGroup = GetEntityGroup(entityGroupName);
             if (entityGroup == null)
             {
                 throw new Exception($"Can not spawn entity because entity group '{entityGroupName}' is invalid.");
@@ -137,7 +136,7 @@ namespace UniFramework.Runtime
             while (m_RecycleQueue.Count > 0)
             {
                 Entity entity = m_RecycleQueue.Dequeue();
-                EntityGroup entityGroup = (EntityGroup)entity.EntityGroup;
+                EntityGroup entityGroup = entity.EntityGroup;
                 if (entityGroup == null)
                 {
                     throw new Exception($"Can not recycle entity '{entity.Id}' because it is invalid.");
