@@ -162,7 +162,7 @@ public sealed partial class ExcelConfigTableGenerator
 
     private static string GetConfigClassName(string className)
     {
-        return $"{className}Config";
+        return $"{className}ConfigTable";
     }
 
     private static string GetRowClassName(string className)
