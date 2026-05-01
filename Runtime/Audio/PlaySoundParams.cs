@@ -1,4 +1,4 @@
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public struct PlaySoundParams
     {

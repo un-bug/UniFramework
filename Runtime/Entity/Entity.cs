@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public sealed class Entity : MonoBehaviour
     {

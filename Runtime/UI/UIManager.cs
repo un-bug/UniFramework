@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     [DisallowMultipleComponent]
     public sealed class UIManager : MonoSingleton<UIManager>
@@ -52,11 +52,11 @@ namespace UniFramework.Runtime
 
         public bool TryGetUIPanel(string uiPanelAssetName, out UIPanel uiPanel)
         {
-            foreach (var panel in m_UIPanelInfo.Keys)
+            foreach (UIPanel item in m_UIPanelInfo.Keys)
             {
-                if (panel != null && panel.UIPanelAssetName == uiPanelAssetName)
+                if (item != null && item.UIPanelAssetName == uiPanelAssetName)
                 {
-                    uiPanel = panel;
+                    uiPanel = item;
                     return true;
                 }
             }
@@ -101,9 +101,8 @@ namespace UniFramework.Runtime
                 return null;
             }
 
-            uiPanel.Initialize(uiPanelAssetName);
-            AttachPanelToGroup(uiPanel, uiGroup);
-            InternalOpenUIPanel(uiPanel, uiGroup, userData);
+            AttachUIPanelToGroup(uiPanel, uiGroup);
+            InternalOpenUIPanel(uiPanelAssetName, uiPanel, uiGroup, userData);
             return uiPanel;
         }
 
@@ -116,7 +115,7 @@ namespace UniFramework.Runtime
 
             if (!m_UIPanelInfo.TryGetValue(uiPanel, out UIGroup uiGroup))
             {
-                Debug.LogError($"[UIManager] closing a panel that is not managed by any group: {uiPanel.name}");
+                Debug.LogError($"[UIManager] closing a uiPanel that is not managed by any group: {uiPanel.name}");
                 return;
             }
 
@@ -146,7 +145,7 @@ namespace UniFramework.Runtime
 
             if (!m_UIPanelInfo.TryGetValue(uiPanel, out UIGroup uiGroup))
             {
-                Debug.LogWarning($"[UIManager] refocus a panel that is not managed by any group: {uiPanel.name}");
+                Debug.LogWarning($"[UIManager] refocus a uiPanel that is not managed by any group: {uiPanel.name}");
                 return;
             }
 
@@ -195,7 +194,7 @@ namespace UniFramework.Runtime
             m_UIGroups.Add(groupName, group);
         }
 
-        private void AttachPanelToGroup<T>(T uiPanel, UIGroup uiGroup) where T : UIPanel
+        private void AttachUIPanelToGroup(UIPanel uiPanel, UIGroup uiGroup)
         {
             // 如果面板已经在其他组，先移除。
             if (m_UIPanelInfo.TryGetValue(uiPanel, out UIGroup oldGroup))
@@ -213,11 +212,11 @@ namespace UniFramework.Runtime
             }
         }
 
-        private void InternalOpenUIPanel(UIPanel uiPanel, UIGroup uiGroup, object userData)
+        private void InternalOpenUIPanel(string uiPanelAssetName, UIPanel uiPanel, UIGroup uiGroup, object userData)
         {
             try
             {
-                uiPanel.OnInit(userData);
+                uiPanel.OnInit(uiPanelAssetName, userData);
                 uiGroup.AddUIPanel(uiPanel);
                 uiPanel.OnOpen(userData);
                 uiGroup.Refresh();

@@ -1,36 +1,19 @@
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
-    public class UIPanel : MonoBehaviour
+    public sealed class UIPanel : MonoBehaviour
     {
-        private bool m_Visible = false;
-        private bool m_Paused = true;
-        private bool m_Covered = true;
-        private string m_UIPanelAssetName;
+        [SerializeField] private bool m_Paused = true;
+        [SerializeField] private bool m_Covered = true;
+        [SerializeField] private bool m_PauseCoveredUI = true;
+        [SerializeField] private string m_UIPanelAssetName;
+        [SerializeField] private UIPanelLogic m_Logic;
 
-        protected internal virtual bool PauseCoveredUIPanel => true;
-        protected internal string UIPanelAssetName => m_UIPanelAssetName;
-        
-        public bool Visible
-        {
-            get
-            {
-                return m_Visible;
-            }
-            set
-            {
-                if (m_Visible == value)
-                {
-                    return;
-                }
-
-                m_Visible = value;
-                gameObject.SetActive(m_Visible);
-            }
-        }
-
-        protected internal bool Paused
+        public string UIPanelAssetName => m_UIPanelAssetName;
+        public UIPanelLogic Logic => m_Logic;
+        public bool PauseCoveredUI => m_PauseCoveredUI;
+        public bool Paused
         {
             get
             {
@@ -41,8 +24,7 @@ namespace UniFramework.Runtime
                 m_Paused = value;
             }
         }
-
-        protected internal bool Covered
+        public bool Covered
         {
             get
             {
@@ -54,54 +36,79 @@ namespace UniFramework.Runtime
             }
         }
 
-        public virtual void CloseSelf()
-        {
-            UIManager.Instance.CloseUIPanel(this);
-        }
-
-        internal void Initialize(string uiPanelAssetName)
+        public void OnInit(string uiPanelAssetName, object userData)
         {
             m_UIPanelAssetName = uiPanelAssetName;
+            m_Logic = GetComponent<UIPanelLogic>();
+            if (m_Logic)
+            {
+                m_PauseCoveredUI = m_Logic.PauseCoveredUI;
+                m_Logic.OnInit(userData);
+            }
         }
 
-        protected internal virtual void OnInit(object userData)
+        public void OnRelease()
         {
+            if (m_Logic)
+            {
+                m_Logic.OnRelease();
+            }
         }
 
-        protected internal virtual void OnRelease()
+        public void OnOpen(object userData)
         {
+            if (m_Logic)
+            {
+                m_Logic.OnOpen(userData);
+            }
         }
 
-        protected internal virtual void OnOpen(object userData)
+        public void OnClose()
         {
-            Visible = true;
+            if (m_Logic)
+            {
+                m_Logic.OnClose();
+            }
         }
 
-        protected internal virtual void OnClose()
+        public void OnResume()
         {
-            Visible = false;
+            if (m_Logic)
+            {
+                m_Logic.OnResume();
+            }
         }
 
-        protected internal virtual void OnResume()
+        public void OnPause()
         {
-            Visible = true;
+            if (m_Logic)
+            {
+                m_Logic.OnPause();
+            }
         }
 
-        protected internal virtual void OnPause()
+        public void OnReveal()
         {
-            Visible = false;
+            if (m_Logic)
+            {
+                m_Logic.OnReveal();
+            }
         }
 
-        protected internal virtual void OnReveal()
+        public void OnCover()
         {
+            if (m_Logic)
+            {
+                m_Logic.OnCover();
+            }
         }
 
-        protected internal virtual void OnCover()
+        public void OnRefocus(object userData)
         {
-        }
-
-        protected internal virtual void OnRefocus(object userData)
-        {
+            if (m_Logic)
+            {
+                m_Logic.OnRefocus(userData);
+            }
         }
     }
 }

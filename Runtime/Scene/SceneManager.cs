@@ -4,7 +4,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public delegate void LoadSceneSuccessHandler(Scene sceneInstance, string sceneName, object userData);
 

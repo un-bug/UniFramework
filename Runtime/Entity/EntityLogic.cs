@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public abstract class EntityLogic : MonoBehaviour
     {

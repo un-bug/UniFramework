@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     [CreateAssetMenu(fileName = "AudioManagerSettings", menuName = "UniFramework/Modules/AudioManagerSettings")]
     public class AudioManagerSettings : ScriptableObject

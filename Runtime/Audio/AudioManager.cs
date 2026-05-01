@@ -5,7 +5,7 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.Audio;
 using UnityEngine.Pool;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public delegate void PlaySoundHandler(int serialId, AudioSource source, object userData);
 

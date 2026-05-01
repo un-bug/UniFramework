@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     [DisallowMultipleComponent]
     public sealed partial class EntityManager : MonoSingleton<EntityManager>

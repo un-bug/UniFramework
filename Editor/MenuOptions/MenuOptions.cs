@@ -8,7 +8,7 @@ namespace UniFramework.Editor
         [MenuItem("GameObject/UniFramework/UI Root", false, 11)]
         public static void AddUIRoot(MenuCommand menuCommand)
         {
-            var uiRoot = new GameObject("UIRoot").AddComponent<Runtime.UIRoot>();
+            var uiRoot = new GameObject("UIRoot").AddComponent<UIRoot>();
             uiRoot.gameObject.layer = LayerMask.NameToLayer("UI");
             Canvas uiCanvas = new GameObject("UI Canvas").AddComponent<Canvas>();
             uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;

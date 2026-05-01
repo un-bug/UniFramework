@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public interface IEntityGroupHelper
     {

@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public interface ISceneLoadingScreen
     {

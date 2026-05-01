@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public interface IUIRoot
     {
@@ -65,12 +65,10 @@ namespace UniFramework.Runtime
                 return null;
             }
 
-            GameObject uiPanelInstanceObject = Instantiate(uiPanelAsset);
-            if (!uiPanelInstanceObject.TryGetComponent(out uiPanel))
+            GameObject instanceObject = Instantiate(uiPanelAsset);
+            if (!instanceObject.TryGetComponent(out uiPanel))
             {
-                Debug.LogError($"[UIRoot] ui panel '{uiPanelAssetName}' is invalid.");
-                Destroy(uiPanelInstanceObject);
-                return null;
+                uiPanel = instanceObject.AddComponent<UIPanel>();
             }
 
             m_CacheUIPanels[uiPanelAssetName] = uiPanel;

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
     public class ConfigTableManager : MonoSingleton<ConfigTableManager>
     {

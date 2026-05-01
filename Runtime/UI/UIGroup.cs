@@ -2,8 +2,22 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UniFramework.Runtime
+namespace UniFramework
 {
+    [Serializable]
+    public sealed class UIGroupData
+    {
+        [SerializeField] private string m_Name = null;
+        [SerializeField] private int m_Depth = 0;
+        public string Name => m_Name;
+        public int Depth => m_Depth;
+        public UIGroupData(string name, int depth)
+        {
+            m_Name = name;
+            m_Depth = depth;
+        }
+    }
+
     public class UIGroup : IDisposable
     {
         public string Name;
@@ -14,9 +28,9 @@ namespace UniFramework.Runtime
 
         public UIGroup(string name, int depth, Transform instanceRoot)
         {
-            this.Name = name;
-            this.Depth = depth;
-            this.InstanceRoot = instanceRoot;
+            Name = name;
+            Depth = depth;
+            InstanceRoot = instanceRoot;
             m_UIPanels = new List<UIPanel>();
         }
 
@@ -34,7 +48,7 @@ namespace UniFramework.Runtime
 
             if (m_UIPanels.Contains(uiPanel))
             {
-                Debug.LogWarning($"[{nameof(UIManager)}] UIGroup '{Name}' UIPanel already exists: {uiPanel.name}");
+                Debug.LogWarning($"[{nameof(UIManager)}] UIGroup '{Name}' uiPanel already exists: {uiPanel.name}");
                 return;
             }
 
@@ -120,7 +134,7 @@ namespace UniFramework.Runtime
                     }
                 }
 
-                if (current.PauseCoveredUIPanel)
+                if (current.PauseCoveredUI)
                 {
                     isPause = true;
                 }
