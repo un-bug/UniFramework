@@ -39,7 +39,7 @@ namespace UniFramework
             UIPanel = GetComponent<UIPanel>();
         }
 
-        protected internal virtual void OnRelease()
+        protected internal virtual void OnRecycle()
         {
         }
 
