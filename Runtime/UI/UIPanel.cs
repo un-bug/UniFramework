@@ -47,11 +47,11 @@ namespace UniFramework
             }
         }
 
-        public void OnRelease()
+        public void OnRecycle()
         {
             if (m_Logic)
             {
-                m_Logic.OnRelease();
+                m_Logic.OnRecycle();
             }
         }
 

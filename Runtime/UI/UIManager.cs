@@ -124,7 +124,7 @@ namespace UniFramework
             uiPanel.OnClose();
             uiGroup.Refresh();
             CloseUIPanelComplete?.Invoke(uiPanel);
-            uiPanel.OnRelease();
+            uiPanel.OnRecycle();
         }
 
         public void CloseAllUIPanels()
