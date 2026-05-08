@@ -90,7 +90,6 @@ public sealed partial class ExcelConfigTableGenerator
         sb.AppendLine(" * 如需修改，请在对应的 Excel 表格中修改后重新生成。");
         sb.AppendLine(" * ");
         sb.AppendLine($" * 源文件: {fileName}");
-        sb.AppendLine($" * 生成时间: {System.DateTime.Now.ToString("yyyy-MM-dd")}");
         sb.AppendLine(" * ===========================================================");
         sb.AppendLine(" */");
         sb.AppendLine();

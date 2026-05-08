@@ -38,8 +38,20 @@ public sealed partial class ExcelConfigTableGenerator
         Debug.Log("Excel asset generation finished.");
     }
 
+    [MenuItem("UniFramework/ConfigTable Generate Assets", true)]
+    private static bool ValidateGenerateAsset()
+    {
+        return !EditorApplication.isCompiling && !EditorApplication.isUpdating;
+    }
+
     public static void GenerateAsset(string path)
     {
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+        {
+            Debug.LogWarning("Unity 正在编译或刷新资源，禁止生成配置表。");
+            return;
+        }
+
         if (!Path.GetExtension(path).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
             Debug.LogWarning($"Unsupported file extension: {path}");
