@@ -8,14 +8,16 @@ namespace UniFramework
         private Dictionary<string, ConfigTableBase> m_ConfigTables;
         private IAssetLoader m_AssetLoader;
 
-        protected override void OnInit()
+        protected override void OnSingletonInit()
         {
+            base.OnSingletonInit();
             m_ConfigTables = new Dictionary<string, ConfigTableBase>();
             m_AssetLoader = AssetLoaderFactory.Get();
         }
 
-        protected override void OnDispose()
+        protected override void OnSingletonRelease()
         {
+            base.OnSingletonRelease();
             AssetLoaderFactory.Release(m_AssetLoader);
         }
 

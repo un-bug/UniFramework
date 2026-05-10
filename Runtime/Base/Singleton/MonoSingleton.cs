@@ -2,12 +2,52 @@ using UnityEngine;
 
 namespace UniFramework
 {
+    internal static class MonoSingletonRuntime
+    {
+        public const string RootName = "[MonoSingleton]";
+        private static GameObject s_Root;
+        public static bool IsQuitting { get; private set; }
+        public static Transform RootTransform
+        {
+            get
+            {
+                if (s_Root == null)
+                {
+                    s_Root = GameObject.Find(RootName);
+
+                    if (s_Root == null)
+                    {
+                        s_Root = new GameObject(RootName);
+                    }
+
+                    Object.DontDestroyOnLoad(s_Root);
+                }
+
+                return s_Root.transform;
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetRuntimeState()
+        {
+            IsQuitting = false;
+
+            Application.quitting -= OnApplicationQuitting;
+            Application.quitting += OnApplicationQuitting;
+        }
+
+        private static void OnApplicationQuitting()
+        {
+            IsQuitting = true;
+        }
+    }
+
     public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T>
     {
-        private const string RootName = "[MonoSingleton]";
-        private static bool s_IsQuitting;
         private static T s_Instance;
-        protected static GameObject s_Root;
+
+        private bool m_Initialized;
+        private bool m_Released;
 
         protected virtual bool IsDontDestroyOnLoad => true;
         public static bool HasInstance => s_Instance != null;
@@ -15,7 +55,7 @@ namespace UniFramework
         {
             get
             {
-                if (s_IsQuitting)
+                if (MonoSingletonRuntime.IsQuitting)
                 {
                     Debug.LogWarning($"[MonoSingleton] instance of {typeof(T).Name} requested while application is quitting.");
                     return null;
@@ -25,7 +65,7 @@ namespace UniFramework
             }
         }
 
-        private void Awake()
+        protected virtual void Awake()
         {
             if (s_Instance != null && s_Instance != this)
             {
@@ -38,50 +78,52 @@ namespace UniFramework
 
             if (IsDontDestroyOnLoad)
             {
-                if (s_Root == null)
+                Transform root = MonoSingletonRuntime.RootTransform;
+                if (transform.parent != root.transform)
                 {
-                    s_Root = GameObject.Find(RootName) ?? new GameObject(RootName);
-                    DontDestroyOnLoad(s_Root);
-                }
-
-                if (transform.parent != s_Root.transform)
-                {
-                    transform.SetParent(s_Root.transform);
+                    transform.SetParent(root.transform);
                 }
             }
 
+            InitSingleton();
             Debug.Log($"[MonoSingleton] {typeof(T).Name} created.", gameObject);
-            OnInit();
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
             if (s_Instance == this)
             {
-                OnDispose();
+                ReleaseSingleton();
                 s_Instance = null;
                 Debug.Log($"[MonoSingleton] {typeof(T).Name} disposed.");
             }
         }
 
-        private void OnApplicationQuit()
+        protected virtual void OnSingletonInit() { }
+
+        protected virtual void OnSingletonRelease() { }
+
+        private void InitSingleton()
         {
-            s_IsQuitting = true;
+            if (m_Initialized)
+            {
+                return;
+            }
+
+            OnSingletonInit();
+            m_Initialized = true;
         }
 
-        private void Update()
+        private void ReleaseSingleton()
         {
-            OnUpdate(Time.deltaTime);
+            if (m_Released)
+            {
+                return;
+            }
+
+            m_Released = true;
+            OnSingletonRelease();
         }
-
-        protected virtual void OnInit()
-        { }
-
-        protected virtual void OnDispose()
-        { }
-
-        protected virtual void OnUpdate(float deltaTime)
-        { }
 
         private static T GetOrCreateInstance()
         {
