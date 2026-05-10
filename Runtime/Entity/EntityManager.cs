@@ -10,16 +10,25 @@ namespace UniFramework
         private Dictionary<string, EntityGroup> m_EntityGroups;
         private Queue<Entity> m_RecycleQueue;
 
-        protected override void OnInit()
+        private void Update()
         {
-            base.OnInit();
+            ProcessRecycleQueue();
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            {
+                entityGroup.OnUpdate(Time.deltaTime);
+            }
+        }
+
+        protected override void OnSingletonInit()
+        {
+            base.OnSingletonInit();
             m_EntityGroups = new Dictionary<string, EntityGroup>();
             m_RecycleQueue = new Queue<Entity>();
         }
 
-        protected override void OnDispose()
+        protected override void OnSingletonRelease()
         {
-            base.OnDispose();
+            base.OnSingletonRelease();
             foreach (EntityGroup entityGroup in m_EntityGroups.Values)
             {
                 entityGroup.Shutdown();
@@ -27,16 +36,6 @@ namespace UniFramework
 
             m_EntityGroups.Clear();
             m_RecycleQueue.Clear();
-        }
-
-        protected override void OnUpdate(float deltaTime)
-        {
-            base.OnUpdate(deltaTime);
-            ProcessRecycleQueue();
-            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
-            {
-                entityGroup.OnUpdate(deltaTime);
-            }
         }
 
         public EntityGroup GetEntityGroup(string entityGroupName)
