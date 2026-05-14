@@ -93,7 +93,10 @@ public sealed partial class ExcelConfigTableGenerator
         sb.AppendLine(" * ===========================================================");
         sb.AppendLine(" */");
         sb.AppendLine();
-        sb.AppendLine("[System.Serializable]");
+        sb.AppendLine("using System;");
+        sb.AppendLine("using UnityEngine;");
+        sb.AppendLine();
+        sb.AppendLine("[Serializable]");
         sb.AppendLine($"public class {rowClassName} : {nameof(ConfigTableRow)}");
         sb.AppendLine("{");
 
@@ -104,30 +107,48 @@ public sealed partial class ExcelConfigTableGenerator
             string fieldType = sheet.GetCell(typeRowIndex, i).Trim();
             string fieldNote = sheet.GetCell(noteRowIndex, i).Trim();
 
-            if (string.IsNullOrEmpty(fieldName) || string.IsNullOrEmpty(fieldType))
+            if (string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrWhiteSpace(fieldType))
             {
                 continue;
             }
 
-            if (i == 1)//fieldType == "int" && fieldName == "Id")
+            if (i == 1 && fieldType != "int")
             {
-                sb.AppendLine($"    public override {fieldType} ID => m_{fieldName};");
-                sb.AppendLine();
+                throw new System.Exception($"Id 字段类型必须是 int，当前是 {fieldType}");
             }
 
-            sb.AppendLine($"    [UnityEngine.Header(\"{fieldNote}\")]");
-            sb.AppendLine($"    [UnityEngine.SerializeField] {fieldType} m_{fieldName};");
+            string privateFieldName = $"m_{fieldName}";
+
+            if (!string.IsNullOrEmpty(fieldNote))
+            {
+                sb.AppendLine($"    [Header(\"{fieldNote}\")]");
+            }
+
+            sb.AppendLine($"    [SerializeField] private {fieldType} {privateFieldName};");
             sb.AppendLine();
-            sb.AppendLine($"    /// <summary>");
-            sb.AppendLine($"    /// {fieldNote}。");
-            sb.AppendLine($"    /// </summary>");
-            sb.AppendLine($"    public {fieldType} {fieldName} => m_{fieldName};");
+
+            if (!string.IsNullOrEmpty(fieldNote))
+            {
+                sb.AppendLine($"    /// <summary>");
+                sb.AppendLine($"    /// {fieldNote}。");
+                sb.AppendLine($"    /// </summary>");
+            }
+
+            if (i == 1) // Id 字段特殊处理。
+            {
+                sb.AppendLine($"    public override {fieldType} Id => {privateFieldName};");
+            }
+            else
+            {
+                sb.AppendLine($"    public {fieldType} {fieldName} => {privateFieldName};");
+            }
+            
             sb.AppendLine();
         }
 
         sb.AppendLine("}");
         sb.AppendLine();
-        sb.AppendLine($"public class {configClassName} : ConfigTable<{rowClassName}>");
+        sb.AppendLine($"public partial class {configClassName} : ConfigTable<{rowClassName}>");
         sb.AppendLine("{");
         sb.AppendLine("}");
         if (!Directory.Exists(Settings.ClassesOutputFolder))

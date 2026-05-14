@@ -22,7 +22,7 @@ public abstract class ConfigTable<T> : ConfigTableBase, IEnumerable<T> where T :
             for (int i = 0; i < Data.Count; i++)
             {
                 T item = Data[i];
-                if (item != null && item.ID == id)
+                if (item != null && item.Id == id)
                 {
                     row = item;
                     return true;
