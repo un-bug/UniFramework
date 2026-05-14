@@ -2,5 +2,5 @@ using System;
 
 public abstract class ConfigTableRow
 {
-    public abstract int ID { get; }
+    public abstract int Id { get; }
 }
