@@ -33,7 +33,7 @@ namespace UniFramework
         {
             if (RectTransform == null)
             {
-                RectTransform = (RectTransform)transform;
+                RectTransform = transform as RectTransform;
             }
 
             UIPanel = GetComponent<UIPanel>();
