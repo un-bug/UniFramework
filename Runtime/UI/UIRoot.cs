@@ -16,7 +16,6 @@ namespace UniFramework
         [SerializeField] private Transform m_InstanceRoot;
         [SerializeField] private UIGroupData[] m_UIGroups;
 
-        private UIManager m_UIManager;
         private IAssetLoader m_AssetLoader;
         private Dictionary<string, UIPanel> m_CacheUIPanels;
         
@@ -25,9 +24,8 @@ namespace UniFramework
 
         protected virtual void Awake()
         {
-            m_UIManager = UIManager.Instance;
             m_AssetLoader = AssetLoaderFactory.Get();
-            m_UIManager.SetUIRoot(this);
+            UIManager.SetUIRoot(this);
             if (m_UICanvas == null)
             {
                 m_UICanvas = GetComponentInChildren<Canvas>();
@@ -100,7 +98,7 @@ namespace UniFramework
             rectTransform.sizeDelta = Vector2.zero;
             rectTransform.pivot = new Vector2(0.5f, 0.5f);
             rectTransform.SetSiblingIndex(depth);
-            m_UIManager.AddGroup(groupName, depth, rootObject.transform);
+            UIManager.AddGroup(groupName, depth, rootObject.transform);
         }
     }
 }

@@ -40,7 +40,7 @@ namespace UniFramework.Editor
                 return;
             }
 
-            CoroutineManager manager = FindObjectOfType<CoroutineManager>();
+            CoroutineModule manager = FindObjectOfType<CoroutineModule>();
 
             if (manager == null)
             {
@@ -52,7 +52,7 @@ namespace UniFramework.Editor
             DrawTaskList(manager);
         }
 
-        private void DrawToolbar(CoroutineManager manager)
+        private void DrawToolbar(CoroutineModule manager)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
@@ -71,7 +71,7 @@ namespace UniFramework.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawTaskList(CoroutineManager manager)
+        private void DrawTaskList(CoroutineModule manager)
         {
             EditorGUILayout.Space(4);
 
@@ -106,7 +106,7 @@ namespace UniFramework.Editor
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawTaskItem(CoroutineManager manager, CoroutineTask task)
+        private void DrawTaskItem(CoroutineModule manager, CoroutineTask task)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
 

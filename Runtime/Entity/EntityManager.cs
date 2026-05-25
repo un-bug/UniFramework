@@ -1,149 +1,47 @@
 ﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace UniFramework
 {
-    [DisallowMultipleComponent]
-    public sealed partial class EntityManager : MonoSingleton<EntityManager>
+    public static class EntityManager
     {
-        private Dictionary<string, EntityGroup> m_EntityGroups;
-        private Queue<Entity> m_RecycleQueue;
+        internal static EntityModule m_EntityModuleInstance;
 
-        private void Update()
+        internal static EntityModule m_EntityModule
         {
-            ProcessRecycleQueue();
-            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            get
             {
-                entityGroup.OnUpdate(Time.deltaTime);
+                return ModuleProvider.GetModule(ref m_EntityModuleInstance, "EntityManager");
             }
         }
 
-        protected override void OnSingletonInit()
+        public static EntityGroup GetEntityGroup(string entityGroupName)
         {
-            base.OnSingletonInit();
-            m_EntityGroups = new Dictionary<string, EntityGroup>();
-            m_RecycleQueue = new Queue<Entity>();
+            return m_EntityModule.GetEntityGroup(entityGroupName);
         }
 
-        protected override void OnSingletonRelease()
+        public static bool HasEntityGroup(string entityGroupName)
         {
-            base.OnSingletonRelease();
-            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
-            {
-                entityGroup.Shutdown();
-            }
-
-            m_EntityGroups.Clear();
-            m_RecycleQueue.Clear();
+            return m_EntityModule.HasEntityGroup(entityGroupName);
         }
 
-        public EntityGroup GetEntityGroup(string entityGroupName)
+        public static bool AddEntityGroup(string entityGroupName, IEntityGroupHelper entityGroupHelper)
         {
-            if (m_EntityGroups.TryGetValue(entityGroupName, out var entityGroup))
-            {
-                return entityGroup;
-            }
-
-            return null;
+            return m_EntityModule.AddEntityGroup(entityGroupName, entityGroupHelper);
         }
 
-        public bool HasEntityGroup(string entityGroupName)
+        public static bool RemoveEntityGroup(string entityGroupName)
         {
-            return m_EntityGroups.ContainsKey(entityGroupName);
+            return m_EntityModule.RemoveEntityGroup(entityGroupName);
         }
 
-        public bool AddEntityGroup(string entityGroupName, IEntityGroupHelper entityGroupHelper)
+        public static Entity ShowEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName, object userData)
         {
-            if (string.IsNullOrEmpty(entityGroupName))
-            {
-                return false;
-            }
-
-            if (HasEntityGroup(entityGroupName))
-            {
-                return false;
-            }
-
-            m_EntityGroups.Add(entityGroupName, new EntityGroup(entityGroupName, entityGroupHelper));
-            return true;
+            return m_EntityModule.ShowEntity(entityId, entityLogicType, entityAssetKey, entityGroupName, userData);
         }
 
-        public bool RemoveEntityGroup(string entityGroupName)
+        public static void HideEntity(Entity entity, object userData)
         {
-            if (string.IsNullOrEmpty(entityGroupName))
-            {
-                return false;
-            }
-
-            if (!HasEntityGroup(entityGroupName))
-            {
-                return false;
-            }
-
-            EntityGroup entityGroup = GetEntityGroup(entityGroupName);
-            Entity[] entities = entityGroup.GetAllEntities();
-            foreach (var entity in entities)
-            {
-                HideEntity(entity, null);
-            }
-
-            entityGroup.Shutdown();
-            m_EntityGroups.Remove(entityGroupName);
-            return true;
-        }
-
-        public Entity ShowEntity(int entityId, Type entityLogicType, string entityAssetKey, string entityGroupName, object userData)
-        {
-            EntityGroup entityGroup = GetEntityGroup(entityGroupName);
-            if (entityGroup == null)
-            {
-                throw new Exception($"Can not spawn entity because entity group '{entityGroupName}' is invalid.");
-            }
-
-            return InternalShowEntity(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
-        }
-
-        public void HideEntity(Entity entity, object userData)
-        {
-            InternalHideEntity(entity, userData);
-        }
-
-        private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup, object userData)
-        {
-            Entity entity = entityGroup.SpawnEntity(entityAssetKey);
-            entity.OnInit(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
-            entity.OnShow(userData);
-            return entity;
-        }
-
-        private void InternalHideEntity(Entity entity, object userData)
-        {
-            entity.OnHide(userData);
-            EntityGroup entityGroup = entity.EntityGroup;
-            if (entityGroup == null)
-            {
-                throw new Exception($"Can not despawn entity '{entity.Id}' because it is invalid.");
-            }
-
-            entityGroup.RemoveEntity(entity);
-            m_RecycleQueue.Enqueue(entity);
-        }
-
-        private void ProcessRecycleQueue()
-        {
-            while (m_RecycleQueue.Count > 0)
-            {
-                Entity entity = m_RecycleQueue.Dequeue();
-                EntityGroup entityGroup = entity.EntityGroup;
-                if (entityGroup == null)
-                {
-                    throw new Exception($"Can not recycle entity '{entity.Id}' because it is invalid.");
-                }
-
-                entity.OnRecycle();
-                entityGroup.UnspawnEntity(entity);
-            }
+            m_EntityModule.HideEntity(entity, userData);
         }
     }
 }
