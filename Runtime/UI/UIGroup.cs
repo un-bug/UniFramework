@@ -48,7 +48,7 @@ namespace UniFramework
 
             if (m_UIPanels.Contains(uiPanel))
             {
-                Debug.LogWarning($"[{nameof(UIManager)}] UIGroup '{Name}' uiPanel already exists: {uiPanel.name}");
+                Debug.LogWarning($"[{nameof(UIModule)}] UIGroup '{Name}' uiPanel already exists: {uiPanel.name}");
                 return;
             }
 

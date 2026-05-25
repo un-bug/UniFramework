@@ -1,48 +1,20 @@
-using System.Collections.Generic;
-using UnityEngine;
-
 namespace UniFramework
 {
-    public class ConfigTableManager : MonoSingleton<ConfigTableManager>
+    public static class ConfigTableManager
     {
-        private Dictionary<string, ConfigTableBase> m_ConfigTables;
-        private IAssetLoader m_AssetLoader;
+        internal static ConfigTableModule m_ConfigTableModuleInstance;
 
-        protected override void OnSingletonInit()
+        internal static ConfigTableModule m_ConfigTableModule
         {
-            base.OnSingletonInit();
-            m_ConfigTables = new Dictionary<string, ConfigTableBase>();
-            m_AssetLoader = AssetLoaderFactory.Get();
+            get
+            {
+                return ModuleProvider.GetModule(ref m_ConfigTableModuleInstance, "ConfigTableManager");
+            }
         }
 
-        protected override void OnSingletonRelease()
+        public static ConfigTable<T> GetConfigTable<T>(string configTableAssetKey) where T : ConfigTableRow
         {
-            base.OnSingletonRelease();
-            AssetLoaderFactory.Release(m_AssetLoader);
-        }
-
-        public ConfigTable<T> GetConfigTable<T>(string configTableAssetKey) where T : ConfigTableRow
-        {
-            if (string.IsNullOrEmpty(configTableAssetKey))
-            {
-                Debug.LogError($"Config table asset key is empty: {typeof(T).Name}");
-                return null;
-            }
-
-            if (m_ConfigTables.TryGetValue(configTableAssetKey, out var asset))
-            {
-                return asset as ConfigTable<T>;
-            }
-
-            var configTable = m_AssetLoader.Load<ConfigTable<T>>(configTableAssetKey);
-            if (configTable == null)
-            {
-                Debug.LogError($"Config table asset not found: {configTableAssetKey}");
-                return null;
-            }
-
-            m_ConfigTables[configTableAssetKey] = configTable;
-            return configTable;
+            return m_ConfigTableModule.GetConfigTable<T>(configTableAssetKey);
         }
     }
 }
