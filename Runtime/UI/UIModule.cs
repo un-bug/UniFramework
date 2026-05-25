@@ -12,7 +12,7 @@ namespace UniFramework
 
         private Dictionary<string, UIGroup> m_UIGroups;
         private Dictionary<UIPanel, UIGroup> m_UIPanelInfo;
-        private IUIRoot m_UIRoot;
+        private IUIAssetProvider m_UIAssetProvider;
 
         private void Awake()
         {
@@ -32,15 +32,15 @@ namespace UniFramework
             m_UIPanelInfo.Clear();
         }
 
-        public void SetUIRoot(IUIRoot uiRoot)
+        public void SetUIAssetProvider(IUIAssetProvider uiAssetProvider)
         {
-            if (uiRoot == null)
+            if (uiAssetProvider == null)
             {
-                Debug.LogError($"[UIManager] ui root is invalid.");
+                Debug.LogError($"[UIManager] ui asset provider is invalid.");
                 return;
             }
 
-            m_UIRoot = uiRoot;
+            m_UIAssetProvider = uiAssetProvider;
         }
 
         public bool HasUIPanel(UIPanel uiPanel)
@@ -63,19 +63,14 @@ namespace UniFramework
             return false;
         }
 
-        public UIPanel OpenUIPanel(string uiPanelAssetName)
+        public UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName)
         {
-            return OpenUIPanel(uiPanelAssetName, "Default", null);
-        }
-
-        public UIPanel OpenUIPanel(string uiPanelAssetName, object userData)
-        {
-            return OpenUIPanel(uiPanelAssetName, "Default", userData);
+            return OpenUIPanel(uiPanelAssetName, uiGroupName, null);
         }
 
         public UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName, object userData)
         {
-            if (m_UIRoot == null)
+            if (m_UIAssetProvider == null)
             {
                 throw new InvalidOperationException($"[UIManager] ui root is invalid.");
             }
@@ -93,7 +88,7 @@ namespace UniFramework
                 return uiPanel;
             }
 
-            uiPanel = m_UIRoot.LoadUIPanel(uiPanelAssetName);
+            uiPanel = m_UIAssetProvider.LoadUIPanel(uiPanelAssetName);
             if (uiPanel == null)
             {
                 return null;

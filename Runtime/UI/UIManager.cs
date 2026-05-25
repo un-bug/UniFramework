@@ -13,9 +13,9 @@ namespace UniFramework
             }
         }
 
-        public static void SetUIRoot(IUIRoot uiRoot)
+        public static void SetUIAssetProvider(IUIAssetProvider uiAssetProvider)
         {
-            m_UIModule.SetUIRoot(uiRoot);
+            m_UIModule.SetUIAssetProvider(uiAssetProvider);
         }
 
         public static bool HasUIPanel(UIPanel uiPanel)
@@ -28,14 +28,9 @@ namespace UniFramework
             return m_UIModule.TryGetUIPanel(uiPanelAssetName, out uiPanel);
         }
 
-        public static UIPanel OpenUIPanel(string uiPanelAssetName)
+        public static UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName)
         {
-            return m_UIModule.OpenUIPanel(uiPanelAssetName);
-        }
-
-        public static UIPanel OpenUIPanel(string uiPanelAssetName, object userData)
-        {
-            return m_UIModule.OpenUIPanel(uiPanelAssetName, userData);
+            return m_UIModule.OpenUIPanel(uiPanelAssetName, uiGroupName);
         }
 
         public static UIPanel OpenUIPanel(string uiPanelAssetName, string uiGroupName, object userData)

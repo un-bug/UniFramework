@@ -4,13 +4,22 @@ using UnityEngine;
 
 namespace UniFramework
 {
-    public interface IUIRoot
+    [Serializable]
+    public sealed class UIGroupData
     {
-        UIPanel LoadUIPanel(string uiPanelAssetName);
+        [SerializeField] private string m_Name = null;
+        [SerializeField] private int m_Depth = 0;
+        public string Name => m_Name;
+        public int Depth => m_Depth;
+        public UIGroupData(string name, int depth)
+        {
+            m_Name = name;
+            m_Depth = depth;
+        }
     }
-
+    
     [DefaultExecutionOrder(-10)]
-    public class UIRoot : MonoBehaviour, IUIRoot
+    public class UIRoot : MonoBehaviour, IUIAssetProvider
     {
         [SerializeField] private Canvas m_UICanvas;
         [SerializeField] private Transform m_InstanceRoot;
@@ -25,13 +34,12 @@ namespace UniFramework
         protected virtual void Awake()
         {
             m_AssetLoader = AssetLoaderFactory.Get();
-            UIManager.SetUIRoot(this);
+            UIManager.SetUIAssetProvider(this);
             if (m_UICanvas == null)
             {
                 m_UICanvas = GetComponentInChildren<Canvas>();
             }
 
-            AddUIGroupRoot("Default", 0);
             foreach (var uiGroup in m_UIGroups)
             {
                 AddUIGroupRoot(uiGroup.Name, uiGroup.Depth);
@@ -44,6 +52,14 @@ namespace UniFramework
         {
             AssetLoaderFactory.Release(m_AssetLoader);
             m_AssetLoader = null;
+        }
+
+        private void Reset()
+        {
+            m_UIGroups = new[]
+            {
+                new UIGroupData("Default", 0)
+            };
         }
 
         public UIPanel LoadUIPanel(string uiPanelAssetName)
