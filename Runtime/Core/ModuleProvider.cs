@@ -4,8 +4,9 @@ namespace UniFramework
 {
     internal static class ModuleProvider
     {
+        private const string ModuleRootName = "UniFramework";
         private static Transform m_ModuleRoot;
-
+        public static bool IsQuitting { get; private set; }
         private static Transform ModuleRoot
         {
             get
@@ -15,18 +16,23 @@ namespace UniFramework
                     return m_ModuleRoot;
                 }
 
-                GameObject rootObject = new GameObject("UniFramework");
+                GameObject rootObject = new GameObject(ModuleRootName);
                 Object.DontDestroyOnLoad(rootObject);
                 m_ModuleRoot = rootObject.transform;
                 return m_ModuleRoot;
             }
         }
 
-        internal static T GetModule<T>(ref T instance, string gameObjectName) where T : Component
+        public static T GetModule<T>(ref T instance, string gameObjectName) where T : UniFrameworkModule
         {
             if (instance != null)
             {
                 return instance;
+            }
+
+            if (IsQuitting)
+            {
+                return null;
             }
 
             instance = Object.FindFirstObjectByType<T>();
@@ -40,6 +46,19 @@ namespace UniFramework
             moduleObject.transform.SetParent(ModuleRoot);
             instance = moduleObject.AddComponent<T>();
             return instance;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void BootstrapModule()
+        {
+            IsQuitting = false;
+            Application.quitting -= OnApplicationQuitting;
+            Application.quitting += OnApplicationQuitting;
+        }
+
+        private static void OnApplicationQuitting()
+        {
+            IsQuitting = true;
         }
     }
 }
