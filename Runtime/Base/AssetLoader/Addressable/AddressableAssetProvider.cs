@@ -27,6 +27,59 @@ namespace UniFramework
             m_CachedAssets.Clear();
         }
 
+        public bool HasAsset<T>(string key) where T : Object
+        {
+            return HasAsset(key, typeof(T));
+        }
+
+        public bool HasAsset(string key, Type assetType  = null)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new ArgumentException("asset key cannot be null or empty.", nameof(key));
+            }
+
+            if (assetType != null && !typeof(Object).IsAssignableFrom(assetType))
+            {
+                throw new ArgumentException($"asset type must inherit from UnityEngine.Object. type: {assetType}", nameof(assetType));
+            }
+
+            if (HasCachedAsset(key, assetType))
+            {
+                return true;
+            }
+
+            var handle = Addressables.LoadResourceLocationsAsync(key, assetType);
+
+            try
+            {
+                var locations = handle.WaitForCompletion();
+                return locations != null && locations.Count > 0;
+            }
+            finally
+            {
+                Addressables.Release(handle);
+            }
+
+            bool HasCachedAsset(string key, Type assetType)
+            {
+                if (assetType != null)
+                {
+                    return m_CachedAssets.ContainsKey(new AssetCacheKey(key, assetType));
+                }
+
+                foreach (AssetCacheKey cacheKey in m_CachedAssets.Keys)
+                {
+                    if (cacheKey.Key == key)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         public IAssetHandle<T> LoadAsset<T>(string key) where T : Object
         {
             if (string.IsNullOrWhiteSpace(key))
