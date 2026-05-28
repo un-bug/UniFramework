@@ -1,18 +1,18 @@
 ﻿using System;
-using UnityEngine;
 
 namespace UniFramework
 {
-    public static class AssetLoaderFactory
+    public static class AssetServices
     {
-        private static readonly AddressableAssetProvider s_AddressableAssetProvider = new AddressableAssetProvider();
-
-        public static IAssetLoader Get()
+        private static IAssetProvider s_Provider = new AddressableAssetProvider();
+        public static IAssetProvider Provider => s_Provider;
+        
+        public static IAssetLoader CreateLoader()
         {
-            return new AssetLoader(s_AddressableAssetProvider);
+            return new AssetLoader(s_Provider);
         }
 
-        [Obsolete("Use Dispose instead.")]
+        [Obsolete("Use IAssetLoader.Dispose instead.")]
         public static void Release(IAssetLoader assetLoader)
         {
             if (assetLoader == null)

@@ -33,7 +33,7 @@ namespace UniFramework
 
         protected virtual void Awake()
         {
-            m_AssetLoader = AssetLoaderFactory.Get();
+            m_AssetLoader = AssetServices.CreateLoader();
             UIManager.SetUIAssetProvider(this);
             if (m_UICanvas == null)
             {
@@ -50,7 +50,7 @@ namespace UniFramework
 
         protected virtual void OnDestroy()
         {
-            AssetLoaderFactory.Release(m_AssetLoader);
+            AssetServices.Release(m_AssetLoader);
             m_AssetLoader = null;
         }
 

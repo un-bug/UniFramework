@@ -12,12 +12,12 @@ namespace UniFramework
         private void Awake()
         {
             m_ConfigTables = new Dictionary<string, ConfigTableBase>();
-            m_AssetLoader = AssetLoaderFactory.Get();
+            m_AssetLoader = AssetServices.CreateLoader();
         }
 
         private void OnDestroy()
         {
-            AssetLoaderFactory.Release(m_AssetLoader);
+            AssetServices.Release(m_AssetLoader);
         }
 
         public ConfigTable<T> GetConfigTable<T>(string configTableAssetKey) where T : ConfigTableRow

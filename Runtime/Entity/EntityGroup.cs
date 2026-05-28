@@ -22,7 +22,7 @@ namespace UniFramework
             Helper = entityGroupHelper;
             Entities = new LinkedList<Entity>();
             m_CachedNode = null;
-            m_AssetLoader = AssetLoaderFactory.Get();
+            m_AssetLoader = AssetServices.CreateLoader();
         }
 
         public void Shutdown()
