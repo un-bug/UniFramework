@@ -1,20 +1,47 @@
+using System.Collections.Generic;
+using UnityEngine;
+
 namespace UniFramework
 {
-    public static class ConfigTableManager
+    public class ConfigTableManager : UniFrameworkModule
     {
-        internal static ConfigTableModule m_ConfigTableModuleInstance;
+        private Dictionary<string, ConfigTableBase> m_ConfigTables;
+        private IAssetLoader m_AssetLoader;
 
-        internal static ConfigTableModule m_ConfigTableModule
+        private void Awake()
         {
-            get
-            {
-                return ModuleProvider.GetModule(ref m_ConfigTableModuleInstance, "ConfigTableManager");
-            }
+            m_ConfigTables = new Dictionary<string, ConfigTableBase>();
+            m_AssetLoader = AssetServices.CreateLoader();
         }
 
-        public static ConfigTable<T> GetConfigTable<T>(string configTableAssetKey) where T : ConfigTableRow
+        private void OnDestroy()
         {
-            return m_ConfigTableModule.GetConfigTable<T>(configTableAssetKey);
+            m_AssetLoader.Dispose();
+            m_AssetLoader = null;
+        }
+
+        public ConfigTable<T> GetConfigTable<T>(string configTableAssetKey) where T : ConfigTableRow
+        {
+            if (string.IsNullOrEmpty(configTableAssetKey))
+            {
+                Debug.LogError($"Config table asset key is empty: {typeof(T).Name}");
+                return null;
+            }
+
+            if (m_ConfigTables.TryGetValue(configTableAssetKey, out var asset))
+            {
+                return asset as ConfigTable<T>;
+            }
+
+            var configTable = m_AssetLoader.Load<ConfigTable<T>>(configTableAssetKey);
+            if (configTable == null)
+            {
+                Debug.LogError($"Config table asset not found: {configTableAssetKey}");
+                return null;
+            }
+
+            m_ConfigTables[configTableAssetKey] = configTable;
+            return configTable;
         }
     }
 }

@@ -2,11 +2,11 @@
 
 namespace UniFramework
 {
-    internal static class ModuleProvider
+    public static class GameServices
     {
         private const string ModuleRootName = "UniFramework";
+        private static bool IsQuitting { get; set; }
         private static Transform m_ModuleRoot;
-        public static bool IsQuitting { get; private set; }
         private static Transform ModuleRoot
         {
             get
@@ -23,11 +23,11 @@ namespace UniFramework
             }
         }
 
-        public static T GetModule<T>(ref T instance, string gameObjectName) where T : UniFrameworkModule
+        public static T Get<T>() where T : UniFrameworkModule
         {
-            if (instance != null)
+            if (ModuleCache<T>.Instance != null)
             {
-                return instance;
+                return ModuleCache<T>.Instance;
             }
 
             if (IsQuitting)
@@ -35,21 +35,26 @@ namespace UniFramework
                 return null;
             }
 
-            instance = Object.FindFirstObjectByType<T>();
-            if (instance != null)
+            var instance = Object.FindFirstObjectByType<T>();
+            if (instance == null)
             {
-                instance.transform.SetParent(ModuleRoot);
-                return instance;
+                var moduleObject = new GameObject(typeof(T).Name);
+                instance = moduleObject.AddComponent<T>();
             }
 
-            GameObject moduleObject = new GameObject(gameObjectName);
-            moduleObject.transform.SetParent(ModuleRoot);
-            instance = moduleObject.AddComponent<T>();
+            instance.transform.SetParent(ModuleRoot, false);
+            ModuleCache<T>.Instance = instance;
+
             return instance;
         }
 
+        private static class ModuleCache<T> where T : UniFrameworkModule
+        {
+            public static T Instance;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void BootstrapModule()
+        private static void Bootstrap()
         {
             IsQuitting = false;
             Application.quitting -= OnApplicationQuitting;

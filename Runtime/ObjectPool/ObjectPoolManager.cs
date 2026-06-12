@@ -1,56 +1,99 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UniFramework
 {
-    public static class ObjectPoolManager
+    public class ObjectPoolManager : UniFrameworkModule
     {
-        internal static ObjectPoolModule m_ObjectPoolModuleInstance;
-        internal static ObjectPoolModule ObjectPoolModule
+        private readonly Dictionary<Object, IObjectPoolWrapper> m_Pools = new Dictionary<Object, IObjectPoolWrapper>();
+
+        public int Count
         {
             get
             {
-                return ModuleProvider.GetModule(ref m_ObjectPoolModuleInstance, "ObjectPoolManager");
+                return m_Pools.Count;
             }
         }
 
-        /// <summary>
-        /// 获取指定类型的对象池，如果对象池不存在则创建一个新的池并返回。
-        /// </summary>
-        /// <typeparam name="T">池中管理的对象类型（必须是 MonoBehaviour 类型）。</typeparam>
-        /// <param name="original">池中对象的原型实例（用于创建新对象）。</param>
-        /// <param name="defaultCapacity">池的默认容量，默认为 10。</param>
-        /// <param name="maxSize">池的最大容量，默认为 100。</param>
-        /// <returns>指定类型的对象池。</returns>
-        public static ObjectPoolWrapper<T> GetPool<T>(T original, int defaultCapacity = 10, int maxSize = 100) where T : Object
+        public IEnumerable<KeyValuePair<Object, IObjectPoolWrapper>> GetPools()
         {
-            return ObjectPoolModule.GetPool<T>(original, defaultCapacity, maxSize);
+            return m_Pools;
         }
 
-        /// <summary>
-        /// 清除指定类型的对象池并释放相关资源。
-        /// </summary>
-        /// <typeparam name="T">需要清除池的对象类型。</typeparam>
-        public static void ClearPool<T>(T original) where T : Object
+        public ObjectPoolWrapper<T> GetPool<T>(T original, int defaultCapacity = 10, int maxSize = 100) where T : Object
         {
-            ObjectPoolModule.ClearPool<T>(original);
+            if (original == null)
+            {
+                Debug.LogError($"[{nameof(ObjectPoolManager)}] getPool called with null original.");
+                return null;
+            }
+
+            if (m_Pools.TryGetValue(original, out var value))
+            {
+                if (value is ObjectPoolWrapper<T> objectPoolWrapper)
+                {
+                    objectPoolWrapper.CleanupNulls();
+                    return objectPoolWrapper;
+                }
+                else
+                {
+                    Debug.LogError($"[{nameof(ObjectPoolManager)}] get pool type mismatch.");
+                }
+            }
+
+            var newPool = new ObjectPoolWrapper<T>(original, transform, defaultCapacity, maxSize);
+            m_Pools.Add(original, newPool);
+            return newPool;
         }
 
-        /// <summary>
-        /// 清除指定对象池并释放相关资源。
-        /// </summary>
-        /// <typeparam name="T">池中管理的对象类型。</typeparam>
-        /// <param name="poolWrapper">要清除的对象池实例。</param>
-        public static void ClearPool<T>(ObjectPoolWrapper<T> poolWrapper) where T : Object 
+        public void ClearPool<T>(T original) where T : Object
         {
-            ObjectPoolModule.ClearPool(poolWrapper);
+            if (original == null)
+            {
+                Debug.LogError($"[{nameof(ObjectPoolManager)}] clearPool called with null original.");
+                return;
+            }
+
+            if (m_Pools.TryGetValue(original, out var value))
+            {
+                if (value is IObjectPoolWrapper objectPoolWrapper)
+                {
+                    objectPoolWrapper.Clear();
+                    m_Pools.Remove(original);
+                }
+                else
+                {
+                    Debug.LogError($"[{nameof(ObjectPoolManager)}] clear pool type mismatch.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[{nameof(ObjectPoolManager)}] no pool found for {original.name} to clear.");
+            }
         }
 
-        /// <summary>
-        /// 清除所有对象池并释放所有资源。
-        /// </summary>
-        public static void ClearAllPools()
+        public void ClearPool<T>(ObjectPoolWrapper<T> poolWrapper) where T : Object
         {
-            ObjectPoolModule.ClearAllPools();
+            if (poolWrapper == null)
+            {
+                Debug.LogError($"[{nameof(ObjectPoolManager)}] clearPool called with null poolWrapper.");
+                return;
+            }
+
+            var original = poolWrapper.Original;
+            ClearPool(original);
+        }
+
+        public void ClearAllPools()
+        {
+            var clearList = new List<Object>(m_Pools.Keys);
+            for (int i = clearList.Count - 1; i >= 0; i--)
+            {
+                Object original = clearList[i];
+                ClearPool(original);
+            }
+
+            m_Pools.Clear();
         }
     }
 }
