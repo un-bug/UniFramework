@@ -18,7 +18,7 @@ namespace UniFramework
             StartTime = Time.unscaledTime;
             IsRunning = true;
         }
-        internal CoroutineModule Manager { get; set; }
+        internal CoroutineManager Manager { get; set; }
         public void Stop()
         {
             if (Manager)

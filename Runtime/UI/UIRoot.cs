@@ -27,14 +27,16 @@ namespace UniFramework
 
         private IAssetLoader m_AssetLoader;
         private Dictionary<string, UIPanel> m_CacheUIPanels;
-        
+        private UIManager m_UIManager;
+
         public Canvas UICanvas { get { return m_UICanvas; } set { m_UICanvas = value; } }
         public Transform InstanceRoot { get => m_InstanceRoot; set => m_InstanceRoot = value; }
 
         protected virtual void Awake()
         {
             m_AssetLoader = AssetServices.CreateLoader();
-            UIManager.SetUIAssetProvider(this);
+            m_UIManager = GameServices.Get<UIManager>();
+            m_UIManager.SetUIAssetProvider(this);
             if (m_UICanvas == null)
             {
                 m_UICanvas = GetComponentInChildren<Canvas>();
@@ -50,7 +52,7 @@ namespace UniFramework
 
         protected virtual void OnDestroy()
         {
-            AssetServices.Release(m_AssetLoader);
+            m_AssetLoader.Dispose();
             m_AssetLoader = null;
         }
 
@@ -114,7 +116,7 @@ namespace UniFramework
             rectTransform.sizeDelta = Vector2.zero;
             rectTransform.pivot = new Vector2(0.5f, 0.5f);
             rectTransform.SetSiblingIndex(depth);
-            UIManager.AddGroup(groupName, depth, rootObject.transform);
+            m_UIManager.AddGroup(groupName, depth, rootObject.transform);
         }
     }
 }

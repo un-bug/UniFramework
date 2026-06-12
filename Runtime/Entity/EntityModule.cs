@@ -4,8 +4,7 @@ using UnityEngine;
 
 namespace UniFramework
 {
-    [DisallowMultipleComponent]
-    public sealed partial class EntityModule : UniFrameworkModule
+    public sealed partial class EntityManager : UniFrameworkModule
     {
         private Dictionary<string, EntityGroup> m_EntityGroups;
         private Queue<Entity> m_RecycleQueue;
