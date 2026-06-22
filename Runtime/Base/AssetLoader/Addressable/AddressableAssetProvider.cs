@@ -11,10 +11,12 @@ namespace UniFramework
     public partial class AddressableAssetProvider : IAssetProvider
     {
         private readonly Dictionary<AssetCacheKey, CachedAsset> m_CachedAssets;
+        private readonly Dictionary<AssetCacheKey, AsyncOperationHandle> m_LoadingHandles;
 
         public AddressableAssetProvider()
         {
             m_CachedAssets = new Dictionary<AssetCacheKey, CachedAsset>();
+            m_LoadingHandles = new Dictionary<AssetCacheKey, AsyncOperationHandle>();
         }
 
         public void Clear()
@@ -32,7 +34,7 @@ namespace UniFramework
             return HasAsset(key, typeof(T));
         }
 
-        public bool HasAsset(string key, Type assetType  = null)
+        public bool HasAsset(string key, Type assetType = null)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -200,9 +202,34 @@ namespace UniFramework
 
         private void LoadAsyncInternal<T>(string key, AssetCacheKey cacheKey, Action<IAssetHandle<T>> onCompleted, Action<Exception> onFailed = null) where T : Object
         {
+            if (m_LoadingHandles.TryGetValue(cacheKey, out AsyncOperationHandle loadingHandle))
+            {
+                loadingHandle.Completed += completedHandle =>
+                {
+                    if (completedHandle.Status != AsyncOperationStatus.Succeeded)
+                    {
+                        InvokeLoadFailed(onFailed, new KeyNotFoundException($"failed to load addressable asset: {key} ({typeof(T).Name})"));
+                        return;
+                    }
+
+                    if (TryUseCachedAsset(key, cacheKey, out IAssetHandle<T> cached))
+                    {
+                        onCompleted.Invoke(cached);
+                        return;
+                    }
+
+                    InvokeLoadFailed(onFailed, new KeyNotFoundException($"failed to load cached addressable asset: {key} ({typeof(T).Name})"));
+                };
+
+                return;
+            }
+
             AsyncOperationHandle<T> operationHandle = Addressables.LoadAssetAsync<T>(key);
+            m_LoadingHandles.Add(cacheKey, operationHandle);
             operationHandle.Completed += completedHandle =>
             {
+                m_LoadingHandles.Remove(cacheKey);
+
                 if (completedHandle.Status != AsyncOperationStatus.Succeeded || completedHandle.Result == null)
                 {
                     Addressables.Release(completedHandle);
@@ -213,12 +240,12 @@ namespace UniFramework
                 if (TryUseCachedAsset(key, cacheKey, out IAssetHandle<T> cachedHandle))
                 {
                     Addressables.Release(completedHandle);
-                    onCompleted(cachedHandle);
+                    onCompleted.Invoke(cachedHandle);
                     return;
                 }
 
                 AddCacheAsset(cacheKey, completedHandle.Result, completedHandle);
-                onCompleted(CreateHandle(key, cacheKey, completedHandle.Result));
+                onCompleted.Invoke(CreateHandle(key, cacheKey, completedHandle.Result));
             };
 
             return;
