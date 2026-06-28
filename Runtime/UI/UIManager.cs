@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UniFramework
 {
-    public sealed class UIManager : UniFrameworkModule
+    public sealed class UIManager : GameModule
     {
         public event Action<UIPanel> OpenUIPanelSuccess;
         public event Action<UIPanel> CloseUIPanelComplete;

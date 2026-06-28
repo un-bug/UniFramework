@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace UniFramework
 {
-    public class ObjectPoolManager : UniFrameworkModule
+    public class ObjectPoolManager : GameModule
     {
         private readonly Dictionary<Object, IObjectPoolWrapper> m_Pools = new Dictionary<Object, IObjectPoolWrapper>();
 

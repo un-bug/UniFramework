@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace UniFramework
 {
-    public class ConfigTableManager : UniFrameworkModule
+    public class ConfigTableManager : GameModule
     {
         private Dictionary<string, ConfigTableBase> m_ConfigTables;
         private IAssetLoader m_AssetLoader;

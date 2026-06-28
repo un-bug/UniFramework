@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UniFramework
 {
-    public sealed class CoroutineManager : UniFrameworkModule
+    public sealed class CoroutineManager : GameModule
     {
         private float m_CleanupTimer = 10f;
         private readonly List<CoroutineTask> m_Tasks = new List<CoroutineTask>();

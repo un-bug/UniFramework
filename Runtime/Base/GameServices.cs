@@ -23,7 +23,7 @@ namespace UniFramework
             }
         }
 
-        public static T Get<T>() where T : UniFrameworkModule
+        public static T Get<T>() where T : GameModule
         {
             if (ModuleCache<T>.Instance != null)
             {
@@ -48,7 +48,7 @@ namespace UniFramework
             return instance;
         }
 
-        private static class ModuleCache<T> where T : UniFrameworkModule
+        private static class ModuleCache<T> where T : GameModule
         {
             public static T Instance;
         }
