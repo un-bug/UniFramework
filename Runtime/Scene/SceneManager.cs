@@ -10,7 +10,7 @@ namespace UniFramework
 
     public delegate void LoadSceneFailedHandler(string sceneName, object userData);
 
-    public sealed class SceneManager : UniFrameworkModule
+    public sealed class SceneManager : GameModule
     {
         public event LoadSceneSuccessHandler LoadSceneSuccess;
         public event LoadSceneFailedHandler LoadSceneFailed;

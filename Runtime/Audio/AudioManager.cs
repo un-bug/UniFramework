@@ -9,7 +9,7 @@ namespace UniFramework
 {
     public delegate void PlaySoundHandler(int serialId, AudioSource source, object userData);
 
-    public sealed class AudioManager : UniFrameworkModule
+    public sealed class AudioManager : GameModule
     {
         [SerializeField]
         private AudioManagerSettings m_Settings;

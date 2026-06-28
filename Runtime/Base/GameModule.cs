@@ -2,7 +2,7 @@
 
 namespace UniFramework
 {
-    public abstract class UniFrameworkModule : MonoBehaviour
+    public abstract class GameModule : MonoBehaviour
     {
     }
 }
