@@ -34,7 +34,7 @@ namespace UniFramework
 
         protected virtual void Awake()
         {
-            m_AssetLoader = AssetServices.CreateLoader();
+            m_AssetLoader = ResourceManager.CreateAssetLoader();
             m_UIManager = GameServices.Get<UIManager>();
             m_UIManager.SetUIAssetProvider(this);
             if (m_UICanvas == null)
@@ -74,7 +74,8 @@ namespace UniFramework
                 }
             }
 
-            var uiPanelAsset = m_AssetLoader.Load<GameObject>(uiPanelAssetName);
+            var handle = m_AssetLoader.LoadAsset<GameObject>(uiPanelAssetName);
+            var uiPanelAsset = handle.Asset;
             if (uiPanelAsset == null)
             {
                 Debug.LogError($"[UIRoot] ui panel asset '{uiPanelAssetName}' is not exist.");

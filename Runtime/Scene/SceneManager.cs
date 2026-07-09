@@ -1,7 +1,6 @@
+using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.SceneManagement;
 
 namespace UniFramework
@@ -15,9 +14,15 @@ namespace UniFramework
         public event LoadSceneSuccessHandler LoadSceneSuccess;
         public event LoadSceneFailedHandler LoadSceneFailed;
 
+        private ISceneLoader m_SceneLoader;
         private ISceneLoadingScreen m_SceneLoadingScreen = null;
         private DefaultSceneLoadingScreen m_DefaultLoadingScreen = null;
         private bool m_IsLoading = false;
+
+        private void Awake()
+        {
+            m_SceneLoader = ResourceManager.CreateSceneLoader();
+        }
 
         private DefaultSceneLoadingScreen DefaultLoadingScreen
         {
@@ -36,8 +41,18 @@ namespace UniFramework
             m_SceneLoadingScreen = loadingScreen;
             Debug.Log($"[SceneManager] setting loading screen: {loadingScreen}");
         }
+        
+        public void LoadScene(string mainScene)
+        {
+            LoadScene(mainScene, userData: null, subScenes: Array.Empty<string>());
+        }
 
-        public void LoadScene(string mainScene, object userData = null, params string[] addScenes)
+        public void LoadScene(string mainScene, params string[] subScenes)
+        {
+            LoadScene(mainScene, userData: null, subScenes: subScenes);
+        }
+
+        public void LoadScene(string mainScene, object userData, params string[] subScenes)
         {
             if (m_IsLoading)
             {
@@ -51,9 +66,9 @@ namespace UniFramework
                 return;
             }
 
-            if (addScenes != null && addScenes.Length > 0)
+            if (subScenes != null && subScenes.Length > 0)
             {
-                Debug.Log($"[SceneManager] start loading main scene: {mainScene}, additive scenes: {string.Join(", ", addScenes)}");
+                Debug.Log($"[SceneManager] start loading main scene: {mainScene}, additive scenes: {string.Join(", ", subScenes)}");
             }
             else
             {
@@ -61,46 +76,47 @@ namespace UniFramework
             }
 
             m_IsLoading = true;
-            StartCoroutine(LoadSceneInternal(mainScene, addScenes, userData));
+            StartCoroutine(LoadSceneInternal(mainScene, subScenes, userData));
         }
 
-        private IEnumerator LoadSceneInternal(string mainScene, string[] addScenes, object userData)
+        private IEnumerator LoadSceneInternal(string mainScene, string[] subScenes, object userData)
         {
             ISceneLoadingScreen sceneTransition = m_SceneLoadingScreen ?? DefaultLoadingScreen;
-            sceneTransition?.OnSceneLoadBegin(mainScene, addScenes, userData);
+            sceneTransition?.OnSceneLoadBegin(mainScene, subScenes, userData);
             Debug.Log("[SceneManager] asset preloading...");
-            yield return sceneTransition?.OnScenePreload(mainScene, addScenes, userData);
+            yield return sceneTransition?.OnScenePreload(mainScene, subScenes, userData);
 
             // start loadScene.
-            var mainHandle = Addressables.LoadSceneAsync(mainScene, LoadSceneMode.Single, false, 100);
-            yield return mainHandle;
-            if (mainHandle.Status != AsyncOperationStatus.Succeeded)
+            
+            var mainHandle = m_SceneLoader.LoadSceneAsync(mainScene, LoadSceneMode.Single, false, 100);
+            yield return mainHandle.WaitForCompletion();
+            if (mainHandle.IsDone == false)
             {
                 Debug.LogError($"[SceneManager] failed to load main scene: {mainScene}");
                 LoadSceneFailed?.Invoke(mainScene, userData);
                 yield break;
             }
+            
             // end loadScene.
-
-            var mainSceneInstance = mainHandle.Result;
+            
             yield return null;
-            yield return mainSceneInstance.ActivateAsync();
+            yield return mainHandle.ActivateAsync();
             yield return null;
-            foreach (string addScene in addScenes)
+            foreach (string addScene in subScenes)
             {
-                var addHandle = Addressables.LoadSceneAsync(addScene, LoadSceneMode.Additive);
-                yield return addHandle;
+                var addHandle = m_SceneLoader.LoadSceneAsync(addScene, LoadSceneMode.Additive);
+                yield return addHandle.WaitForCompletion();
 
-                if (addHandle.Status != AsyncOperationStatus.Succeeded)
+                if (addHandle.IsDone == false)
                 {
                     Debug.LogError($"[SceneManager] failed to load additive scene: {addScene}");
                     LoadSceneFailed?.Invoke(addScene, userData);
                 }
             }
 
-            sceneTransition?.OnSceneLoadEnd(mainScene, addScenes, userData);
+            sceneTransition?.OnSceneLoadEnd(mainScene, subScenes, userData);
             Debug.Log($"[SceneManager] all requested scenes loaded. main scene: {mainScene}");
-            LoadSceneSuccess?.Invoke(mainSceneInstance.Scene, mainScene, userData);
+            LoadSceneSuccess?.Invoke(mainHandle.Scene, mainScene, userData);
             m_IsLoading = false;
         }
     }

@@ -11,7 +11,7 @@ namespace UniFramework
         private void Awake()
         {
             m_ConfigTables = new Dictionary<string, ConfigTableBase>();
-            m_AssetLoader = AssetServices.CreateLoader();
+            m_AssetLoader = ResourceManager.CreateAssetLoader();
         }
 
         private void OnDestroy()
@@ -33,7 +33,8 @@ namespace UniFramework
                 return asset as ConfigTable<T>;
             }
 
-            var configTable = m_AssetLoader.Load<ConfigTable<T>>(configTableAssetKey);
+            var handle = m_AssetLoader.LoadAsset<ConfigTable<T>>(configTableAssetKey);
+            var configTable = handle.Asset;
             if (configTable == null)
             {
                 Debug.LogError($"Config table asset not found: {configTableAssetKey}");
