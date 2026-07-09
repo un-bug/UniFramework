@@ -22,7 +22,7 @@ namespace UniFramework
             Helper = entityGroupHelper;
             Entities = new LinkedList<Entity>();
             m_CachedNode = null;
-            m_AssetLoader = AssetServices.CreateLoader();
+            m_AssetLoader = ResourceManager.CreateAssetLoader();
         }
 
         public void Shutdown()
@@ -81,7 +81,8 @@ namespace UniFramework
                 throw new Exception("EntityGroupHelper is invalid.");
             }
 
-            GameObject entityPrefab = m_AssetLoader.Load<GameObject>(entityAssetKey);
+            var handle = m_AssetLoader.LoadAsset<GameObject>(entityAssetKey);
+            GameObject entityPrefab = handle.Asset;
             GameObject entityInstance = GameObject.Instantiate(entityPrefab, ((MonoBehaviour)Helper).transform);
             Entity entity = entityInstance.AddComponent<Entity>();
             AddEntity(entity);

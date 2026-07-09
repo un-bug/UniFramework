@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
 using UnityEngine.Audio;
 using UnityEngine.Pool;
 
@@ -15,8 +14,10 @@ namespace UniFramework
         private AudioManagerSettings m_Settings;
 
         public event PlaySoundHandler PlaySoundSuccess;
+
         public event PlaySoundHandler PlaySoundFailed;
 
+        private IAssetLoader m_AssetLoader;
         private Dictionary<int, AudioSource> m_PlayingAudioSources;
         private Dictionary<int, float> m_PauseResumeVolumes;
         private Dictionary<int, float> m_OriginalVolumes;
@@ -30,6 +31,7 @@ namespace UniFramework
                 m_Settings = ScriptableObject.CreateInstance<AudioManagerSettings>();
             }
 
+            m_AssetLoader = ResourceManager.CreateAssetLoader();
             InjectSettings(m_Settings, true);
         }
 
@@ -40,6 +42,7 @@ namespace UniFramework
             m_PlayingAudioSources.Clear();
             m_PauseResumeVolumes.Clear();
             m_OriginalVolumes.Clear();
+            m_AssetLoader.Dispose();
         }
 
         public void InjectSettings(AudioManagerSettings settings, bool recreatePool = false)
@@ -67,10 +70,38 @@ namespace UniFramework
             m_PauseResumeVolumes = new Dictionary<int, float>(m_Settings.DefaultCapacity);
         }
 
+        public int PlaySound(string soundAssetName, string soundGroup)
+        {
+            return PlaySound(soundAssetName, soundGroup, PlaySoundParams.Default, null);
+        }
+
+        public int PlaySound(string soundAssetName, string soundGroup, PlaySoundParams playSoundParams)
+        {
+            return PlaySound(soundAssetName, soundGroup, playSoundParams, null);
+        }
+
         public int PlaySound(string soundAssetName, string soundGroup, PlaySoundParams playSoundParams, object userData)
         {
             int serialId = ++m_Serial;
-            StartCoroutine(PlaySoundInternal(serialId, soundAssetName, soundGroup, playSoundParams, userData));
+
+            m_AssetLoader.LoadAssetAsync<AudioClip>(soundAssetName, handle =>
+            {
+                AudioClip audioClip = handle.Asset;
+                if (audioClip == null)
+                {
+                    Debug.LogError($"[AudioManager] failed to load audio clip: {soundAssetName}");
+                    handle.Release();
+                    return;
+                }
+
+                AudioSource audioSource = m_AudioSourceItemPool.Get();
+                StartCoroutine(PlaySoundInternal(serialId, audioClip, audioSource, soundGroup, playSoundParams, userData));
+            }, exception =>
+            {
+                Debug.LogError($"[AudioManager] failed to load audioClip: {soundAssetName}");
+                PlaySoundFailed?.Invoke(serialId, null, userData);
+            });
+
             return serialId;
         }
 
@@ -160,64 +191,52 @@ namespace UniFramework
             }
         }
 
-        private IEnumerator PlaySoundInternal(int serialId, string soundAssetName, string soundGroup, PlaySoundParams playSoundParams, object userData)
+        private IEnumerator PlaySoundInternal(int serialId, AudioClip audioClip, AudioSource audioSource, string soundGroup, PlaySoundParams playSoundParams, object userData)
         {
-            var handle = Addressables.LoadAssetAsync<AudioClip>(soundAssetName);
-            yield return handle;
-            if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
+            audioSource.name = $"[{soundGroup} #{serialId}] - {audioClip.name}";
+            audioSource.outputAudioMixerGroup = GetAudioMixerGroup(string.Format("{0}", soundGroup));
+            audioSource.clip = audioClip;
+            audioSource.volume = playSoundParams.Volume;
+            audioSource.pitch = playSoundParams.Pitch;
+            audioSource.loop = playSoundParams.Loop;
+            audioSource.spatialBlend = playSoundParams.SpatialBlend;
+            audioSource.Play();
+
+            if (!m_PlayingAudioSources.TryAdd(serialId, audioSource))
             {
-                AudioClip audioClip = handle.Result;
-                AudioSource audioSource = m_AudioSourceItemPool.Get();
-                audioSource.name = $"[{soundGroup} #{serialId}] - {audioClip.name}";
-                audioSource.outputAudioMixerGroup = GetAudioMixerGroup(string.Format("{0}", soundGroup));
-                audioSource.clip = audioClip;
-                audioSource.volume = playSoundParams.Volume;
-                audioSource.pitch = playSoundParams.Pitch;
-                audioSource.loop = playSoundParams.Loop;
-                audioSource.spatialBlend = playSoundParams.SpatialBlend;
-                audioSource.Play();
+                Debug.LogError($"[AudioManager] duplicate SerialId '{serialId}' detected when registering audio source.");
+            }
 
-                if (!m_PlayingAudioSources.TryAdd(serialId, audioSource))
-                {
-                    Debug.LogError($"[AudioManager] duplicate SerialId '{serialId}' detected when registering audio source.");
-                }
+            if (!m_OriginalVolumes.TryAdd(serialId, playSoundParams.Volume))
+            {
+                Debug.LogError($"[AudioManager] failed to cache original volume. SerialId already exists: {serialId}");
+            }
 
-                if (!m_OriginalVolumes.TryAdd(serialId, playSoundParams.Volume))
-                {
-                    Debug.LogError($"[AudioManager] failed to cache original volume. SerialId already exists: {serialId}");
-                }
+            float fadeInSeconds = playSoundParams.FadeInSeconds;
+            if (fadeInSeconds > 0f)
+            {
+                float volume = audioSource.volume;
+                audioSource.volume = 0f;
+                StartCoroutine(FadeToVolume(audioSource, volume, fadeInSeconds));
+            }
 
-                float fadeInSeconds = playSoundParams.FadeInSeconds;
-                if (fadeInSeconds > 0f)
-                {
-                    float volume = audioSource.volume;
-                    audioSource.volume = 0f;
-                    StartCoroutine(FadeToVolume(audioSource, volume, fadeInSeconds));
-                }
-
-                if (userData is PlaySoundInfo playSoundInfo)
-                {
-                    PlaySoundSuccess?.Invoke(serialId, audioSource, playSoundInfo.UserData);
-                    StartCoroutine(SoundFollow(audioSource, playSoundInfo));
-                }
-                else
-                {
-                    PlaySoundSuccess?.Invoke(serialId, audioSource, userData);
-                }
-
-                if (!playSoundParams.Loop)
-                {
-                    StartCoroutine(AutoRecycle(audioSource));
-                }
+            if (userData is PlaySoundInfo playSoundInfo)
+            {
+                PlaySoundSuccess?.Invoke(serialId, audioSource, playSoundInfo.UserData);
+                StartCoroutine(SoundFollow(audioSource, playSoundInfo));
             }
             else
             {
-                Debug.LogError($"[AudioManager] Failed to load audioClip: {soundAssetName}");
-                PlaySoundFailed?.Invoke(serialId, null, userData);
-                yield break;
+                PlaySoundSuccess?.Invoke(serialId, audioSource, userData);
+            }
+
+            if (!playSoundParams.Loop)
+            {
+                StartCoroutine(AutoRecycle(audioSource));
             }
 
             yield break;
+            
             IEnumerator AutoRecycle(AudioSource source)
             {
                 yield return new WaitForSeconds(source.clip.length);
@@ -279,7 +298,8 @@ namespace UniFramework
         {
             if (m_PlayingAudioSources.TryGetValue(serialId, out AudioSource source))
             {
-                Addressables.Release(source.clip);
+                // TODO: Release the AudioClip if needed.
+
                 m_PlayingAudioSources.Remove(serialId);
                 m_AudioSourceItemPool.Release(source);
             }
