@@ -21,11 +21,8 @@ namespace UniFramework
     {
         IAssetHandle<T> LoadAsset<T>(string assetKey) where T : UnityEngine.Object;
         void LoadAssetAsync<T>(string assetKey, Action<IAssetHandle<T>> onCompleted, Action<Exception> onFailed = null) where T : UnityEngine.Object;
-
-        [Obsolete("Use LoadAsset<T> instead.")]
-        T Load<T>(string assetKey) where T : UnityEngine.Object;
-        void ReleaseAll();
-        void Release(string assetKey);
+        void UnloadAsset(IAssetHandle assetHandle);
+        void UnloadAllAssets();
     }
 
     public interface ISceneHandle
@@ -48,7 +45,7 @@ namespace UniFramework
         IEnumerator InitializeAsync();
         IAssetHandle<T> LoadAsset<T>(string assetKey) where T : UnityEngine.Object;
         void LoadAssetAsync<T>(string assetKey, Action<IAssetHandle<T>> onCompleted, Action<Exception> onFailed = null) where T : UnityEngine.Object;
-        void UnloadAsset<T>(IAssetHandle<T> assetHandle) where T : UnityEngine.Object;
+        void UnloadAsset(IAssetHandle assetHandle);
         ISceneHandle LoadSceneAsync(string sceneKey, LoadSceneMode loadMode = LoadSceneMode.Single, bool activateOnLoad = true, int priority = 100);
         void UnloadSceneAsync(ISceneHandle sceneHandle, Action onCompleted = null, Action<Exception> onFailed = null);
     }

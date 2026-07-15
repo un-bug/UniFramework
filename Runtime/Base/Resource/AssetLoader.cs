@@ -47,18 +47,26 @@ namespace UniFramework
             }, onFailed);
         }
 
-        public void Release(string assetKey)
+        public void UnloadAsset(IAssetHandle assetHandle)
         {
+            if (m_Disposed)
+            {
+                throw new ObjectDisposedException(nameof(AssetLoader));
+            }
+
+            if (assetHandle != null)
+            {
+                m_ResourceLoader.UnloadAsset(assetHandle);
+                m_Handles.Remove(assetHandle);
+            }
         }
 
-        public void ReleaseAll()
+        public void UnloadAllAssets()
         {
             for (int i = m_Handles.Count - 1; i >= 0; i--)
             {
-                m_Handles[i]?.Release();
+                UnloadAsset(m_Handles[i]);
             }
-
-            m_Handles.Clear();
         }
 
         public void Dispose()
@@ -68,8 +76,8 @@ namespace UniFramework
                 return;
             }
 
+            UnloadAllAssets();
             m_Disposed = true;
-            ReleaseAll();
         }
 
         private void Track(IAssetHandle handle)

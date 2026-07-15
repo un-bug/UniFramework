@@ -61,7 +61,7 @@ namespace UniFramework
             };
         }
 
-        public void UnloadAsset<T>(IAssetHandle<T> assetHandle) where T : UnityEngine.Object
+        public void UnloadAsset(IAssetHandle assetHandle)
         {
             if (assetHandle != null)
             {
