@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace UniFramework
 {
@@ -10,6 +11,8 @@ namespace UniFramework
 
     public class EntityGroup
     {
+        private readonly Dictionary<string, ObjectPool<Entity>> m_EntityPools;
+        private readonly Dictionary<Entity, Action> m_ReleaseAssetHandles;
         private LinkedListNode<Entity> m_CachedNode;
         private IAssetLoader m_AssetLoader;
         public string Name { get; private set; }
@@ -21,7 +24,8 @@ namespace UniFramework
             Name = name;
             Helper = entityGroupHelper;
             Entities = new LinkedList<Entity>();
-            m_CachedNode = null;
+            m_EntityPools = new Dictionary<string, ObjectPool<Entity>>();
+            m_ReleaseAssetHandles = new Dictionary<Entity, Action>();
             m_AssetLoader = ResourceManager.CreateAssetLoader();
         }
 
@@ -29,8 +33,14 @@ namespace UniFramework
         {
             Helper = null;
             Entities.Clear();
+            foreach (ObjectPool<Entity> entityPool in m_EntityPools.Values)
+            {
+                entityPool.Clear();
+            }
+
+            m_EntityPools.Clear();
+            m_ReleaseAssetHandles.Clear();
             m_AssetLoader.Dispose();
-            m_AssetLoader = null;
         }
 
         public Entity[] GetAllEntities()
@@ -58,7 +68,7 @@ namespace UniFramework
 
             if (!Entities.Remove(entity))
             {
-                throw new Exception($"EntityGroup remove entity failure, entity id is {entity.Id}.");
+                Debug.LogError($"EntityGroup remove entity failure, entity id is {entity.Id}.");
             }
         }
 
@@ -81,20 +91,66 @@ namespace UniFramework
                 throw new Exception("EntityGroupHelper is invalid.");
             }
 
-            var handle = m_AssetLoader.LoadAsset<GameObject>(entityAssetKey);
-            GameObject entityPrefab = handle.Asset;
-            GameObject entityInstance = GameObject.Instantiate(entityPrefab, ((MonoBehaviour)Helper).transform);
-            Entity entity = entityInstance.AddComponent<Entity>();
+            var pool = GetOrCreatePool(entityAssetKey);
+            Entity entity = pool.Get();
             AddEntity(entity);
             return entity;
         }
 
         public void UnspawnEntity(Entity entity)
         {
-            if (m_AssetLoader != null)
+            if (!m_EntityPools.TryGetValue(entity.EntityAssetKey, out ObjectPool<Entity> pool))
             {
-                string assetKey = entity.EntityAssetKey;
-                m_AssetLoader.Release(assetKey);
+                Debug.LogError($"Entity pool '{entity.EntityAssetKey}' does not exist.");
+                return;
+            }
+
+            pool.Release(entity);
+        }
+
+        private ObjectPool<Entity> GetOrCreatePool(string entityAssetKey)
+        {
+            if (m_EntityPools.TryGetValue(entityAssetKey, out var pool))
+            {
+                return pool;
+            }
+
+            pool = new ObjectPool<Entity>(CreateEntity, OnGetEntity, OnReleaseEntity, OnDestroyEntity, true, 8, 64);
+            m_EntityPools.Add(entityAssetKey, pool);
+            return pool;
+
+            // Create a new entity instance from the asset and return it.
+            Entity CreateEntity()
+            {
+                var handle = m_AssetLoader.LoadAsset<GameObject>(entityAssetKey);
+                GameObject instance = GameObject.Instantiate(handle.Asset, ((MonoBehaviour)Helper).transform);
+                if (instance.TryGetComponent<Entity>(out Entity entity) == false)
+                {
+                    entity = instance.AddComponent<Entity>();
+                }
+
+                instance.SetActive(false);
+                m_ReleaseAssetHandles.Add(entity, () => m_AssetLoader?.UnloadAsset(handle));
+                return entity;
+            }
+
+            void OnGetEntity(Entity entity)
+            {
+                entity.gameObject.SetActive(true);
+            }
+
+            void OnReleaseEntity(Entity entity)
+            {
+                entity.gameObject.SetActive(false);
+            }
+
+            void OnDestroyEntity(Entity entity)
+            {
+                if (m_ReleaseAssetHandles.Remove(entity, out Action releaseHandle))
+                {
+                    releaseHandle.Invoke();
+                }
+
                 GameObject.Destroy(entity.gameObject);
             }
         }

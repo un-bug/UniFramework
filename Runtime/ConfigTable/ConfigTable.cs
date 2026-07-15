@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -43,8 +44,26 @@ public abstract class ConfigTable<T> : ConfigTableBase, IEnumerable<T> where T :
 
         Debug.LogError($"Config row not found: {typeof(T).Name}, ID: {id}");
         return null;
-    } 
-    
+    }
+
+    public T Find(Predicate<T> match)
+    {
+        if (match == null)
+        {
+            throw new ArgumentNullException(nameof(match));
+        }
+
+        for (int i = 0; i < Data.Count; i++)
+        {
+            if (match(Data[i]))
+            {
+                return Data[i];
+            }
+        }
+
+        return default;
+    }
+
     public bool ContainsId(int id)
     {
         return TryGetById(id, out _);

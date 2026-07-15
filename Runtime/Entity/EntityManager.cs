@@ -17,9 +17,11 @@ namespace UniFramework
 
         private void OnDestroy()
         {
-            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            ProcessRecycleQueue();
+            var entityGroupNames = new List<string>(m_EntityGroups.Keys);
+            foreach (string entityGroupName in entityGroupNames)
             {
-                entityGroup.Shutdown();
+                RemoveEntityGroup(entityGroupName);
             }
 
             m_EntityGroups.Clear();
@@ -73,16 +75,15 @@ namespace UniFramework
                 return false;
             }
 
-            if (!HasEntityGroup(entityGroupName))
+            EntityGroup entityGroup = GetEntityGroup(entityGroupName);
+            if (entityGroup == null)
             {
                 return false;
             }
 
-            EntityGroup entityGroup = GetEntityGroup(entityGroupName);
-            Entity[] entities = entityGroup.GetAllEntities();
-            foreach (var entity in entities)
+            foreach (Entity entity in entityGroup.GetAllEntities())
             {
-                HideEntity(entity, null);
+                InternalHideEntity(entity, true, null);
             }
 
             entityGroup.Shutdown();
@@ -98,12 +99,27 @@ namespace UniFramework
                 throw new Exception($"Can not spawn entity because entity group '{entityGroupName}' is invalid.");
             }
 
+            if (!typeof(EntityLogic).IsAssignableFrom(entityLogicType))
+            {
+                throw new ArgumentException($"Type '{entityLogicType.FullName}' must inherit EntityLogic.", nameof(entityLogicType));
+            }
+
+            if (entityLogicType.IsAbstract)
+            {
+                throw new ArgumentException($"Type '{entityLogicType.FullName}' can not be abstract.", nameof(entityLogicType));
+            }
+
             return InternalShowEntity(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
+        }
+
+        public void HideEntity(Entity entity)
+        {
+            HideEntity(entity, null);
         }
 
         public void HideEntity(Entity entity, object userData)
         {
-            InternalHideEntity(entity, userData);
+            InternalHideEntity(entity, false, userData);
         }
 
         private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup, object userData)
@@ -114,17 +130,24 @@ namespace UniFramework
             return entity;
         }
 
-        private void InternalHideEntity(Entity entity, object userData)
+        private void InternalHideEntity(Entity entity, bool recycleImmediately, object userData)
         {
-            entity.OnHide(userData);
             EntityGroup entityGroup = entity.EntityGroup;
             if (entityGroup == null)
             {
                 throw new Exception($"Can not despawn entity '{entity.Id}' because it is invalid.");
             }
 
+            entity.OnHide(userData);
             entityGroup.RemoveEntity(entity);
-            m_RecycleQueue.Enqueue(entity);
+            if (recycleImmediately)
+            {
+                RecycleEntity(entity, entityGroup);
+            }
+            else
+            {
+                m_RecycleQueue.Enqueue(entity);
+            }
         }
 
         private void ProcessRecycleQueue()
@@ -135,12 +158,18 @@ namespace UniFramework
                 EntityGroup entityGroup = entity.EntityGroup;
                 if (entityGroup == null)
                 {
-                    throw new Exception($"Can not recycle entity '{entity.Id}' because it is invalid.");
+                    Debug.LogError($"Can not recycle entity '{entity.Id}' because it is invalid.");
+                    continue;
                 }
 
-                entity.OnRecycle();
-                entityGroup.UnspawnEntity(entity);
+                RecycleEntity(entity, entityGroup);
             }
+        }
+
+        private static void RecycleEntity(Entity entity, EntityGroup entityGroup)
+        {
+            entity.OnRecycle();
+            entityGroup.UnspawnEntity(entity);
         }
     }
 }
