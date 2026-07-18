@@ -1,164 +1,64 @@
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Text;
 using UnityEditor;
 using UnityEngine;
 
 public sealed partial class ExcelConfigTableGenerator
 {
-    public static ExcelConfigTableGeneratorSettings Settings
+    private const string DefaultSettingsPath = "Assets/Settings/ConfigTable/ConfigTableGeneratorSettings.asset";
+    private static ConfigTableGeneratorSettings cachedSettings;
+
+    public static ConfigTableGeneratorSettings Settings
     {
         get
         {
-            string[] guids = AssetDatabase.FindAssets(string.Format("t:{0}", nameof(ExcelConfigTableGeneratorSettings)));
-            if (guids.Length == 0)
+            if (cachedSettings != null)
             {
-                return ScriptableObject.CreateInstance<ExcelConfigTableGeneratorSettings>();
+                return cachedSettings;
             }
 
-            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-            return AssetDatabase.LoadAssetAtPath<ExcelConfigTableGeneratorSettings>(path);
+            cachedSettings = AssetDatabase.LoadAssetAtPath<ConfigTableGeneratorSettings>(DefaultSettingsPath);
+            if (cachedSettings != null)
+            {
+                return cachedSettings;
+            }
+
+            string[] guids = AssetDatabase.FindAssets($"t:{nameof(ConfigTableGeneratorSettings)}");
+            if (guids.Length > 0)
+            {
+                Array.Sort(guids, StringComparer.Ordinal);
+                string existingPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                cachedSettings = AssetDatabase.LoadAssetAtPath<ConfigTableGeneratorSettings>(existingPath);
+
+                if (guids.Length > 1)
+                {
+                    Debug.LogError($"Multiple {nameof(ConfigTableGeneratorSettings)} assets were found. Using '{existingPath}'. Delete the duplicates so the generator has a single source of truth.", cachedSettings);
+                }
+
+                return cachedSettings;
+            }
+
+            string directory = Path.GetDirectoryName(DefaultSettingsPath)?.Replace("\\", "/");
+            EnsureAssetFolderExists(directory);
+
+            cachedSettings = ScriptableObject.CreateInstance<ConfigTableGeneratorSettings>();
+            AssetDatabase.CreateAsset(cachedSettings, DefaultSettingsPath);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"Created config table generator settings: {DefaultSettingsPath}", cachedSettings);
+            return cachedSettings;
         }
     }
 
-    [MenuItem("UniFramework/ConfigTable Generate Classes", false, 20)]
-    private static void GenerateClass()
+    private static void EnsureAssetFolderExists(string folderPath)
     {
-        if (!Directory.Exists(Settings.ExcelFolder))
+        if (string.IsNullOrEmpty(folderPath) || AssetDatabase.IsValidFolder(folderPath))
         {
-            Debug.LogError($"Excel folder not found: {Settings.ExcelFolder}");
             return;
         }
 
-        string[] excelFiles = Directory.GetFiles(Settings.ExcelFolder, "*.xlsx", SearchOption.AllDirectories);
-        foreach (string file in excelFiles)
-        {
-            if (file.EndsWith(".meta", System.StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            if (Path.GetFileName(file).StartsWith("~$"))
-            {
-                continue;
-            }
-
-            GenerateClass(file);
-        }
-
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
-        Debug.Log("Excel class generation finished.");
-    }
-
-    private static void GenerateClass(string path)
-    {
-        if (!Path.GetExtension(path).Equals(".xlsx", System.StringComparison.OrdinalIgnoreCase))
-        {
-            Debug.LogWarning($"Unsupported file extension: {path}");
-            return;
-        }
-
-        string fileName = Path.GetFileName(path);
-        List<XlsxSheetData> sheets = XlsxWorkbookReader.Read(path);
-        for (int sheetIndex = 0; sheetIndex < sheets.Count; sheetIndex++)
-        {
-            var sheet = sheets[sheetIndex];
-            GenerateClassFile(fileName, sheet.Name, sheet);
-        }
-    }
-
-    private static void GenerateClassFile(string fileName, string sheetName, XlsxSheetData sheet)
-    {
-        const int fieldRowIndex = 1; // 字段名。
-        const int typeRowIndex = 2;  // 类型。
-        const int noteRowIndex = 3;  // 备注。
-
-        if (!sheet.HasRow(fieldRowIndex) || !sheet.HasRow(typeRowIndex))
-        {
-            Debug.LogError($"Invalid format in: {sheetName}");
-            return;
-        }
-
-        string className = Path.GetFileNameWithoutExtension(sheetName);
-        string rowClassName = GetRowClassName(className);
-        string configClassName = GetConfigClassName(className);
-        var sb = new StringBuilder();
-        sb.AppendLine("/*");
-        sb.AppendLine(" * ===========================================================");
-        sb.AppendLine(" * 本文件由表格导出工具自动生成，请勿手动修改。");
-        sb.AppendLine(" * 如需修改，请在对应的 Excel 表格中修改后重新生成。");
-        sb.AppendLine(" * ");
-        sb.AppendLine($" * 源文件: {fileName}");
-        sb.AppendLine(" * ===========================================================");
-        sb.AppendLine(" */");
-        sb.AppendLine();
-        sb.AppendLine("using System;");
-        sb.AppendLine("using UnityEngine;");
-        sb.AppendLine();
-        sb.AppendLine("[Serializable]");
-        sb.AppendLine($"public class {rowClassName} : {nameof(ConfigTableRow)}");
-        sb.AppendLine("{");
-
-        int colCount = sheet.LastColumnIndex + 1;
-        for (int i = 1; i < colCount; i++)
-        {
-            string fieldName = sheet.GetCell(fieldRowIndex, i).Trim();
-            string fieldType = sheet.GetCell(typeRowIndex, i).Trim();
-            string fieldNote = sheet.GetCell(noteRowIndex, i).Trim();
-
-            if (string.IsNullOrWhiteSpace(fieldName) || string.IsNullOrWhiteSpace(fieldType))
-            {
-                continue;
-            }
-
-            if (i == 1 && fieldType != "int")
-            {
-                throw new System.Exception($"Id 字段类型必须是 int，当前是 {fieldType}");
-            }
-
-            string privateFieldName = $"m_{fieldName}";
-
-            if (!string.IsNullOrEmpty(fieldNote))
-            {
-                sb.AppendLine($"    [Header(\"{fieldNote}\")]");
-            }
-
-            sb.AppendLine($"    [SerializeField] private {fieldType} {privateFieldName};");
-            sb.AppendLine();
-
-            if (!string.IsNullOrEmpty(fieldNote))
-            {
-                sb.AppendLine($"    /// <summary>");
-                sb.AppendLine($"    /// {fieldNote}。");
-                sb.AppendLine($"    /// </summary>");
-            }
-
-            if (i == 1) // Id 字段特殊处理。
-            {
-                sb.AppendLine($"    public override {fieldType} Id => {privateFieldName};");
-            }
-            else
-            {
-                sb.AppendLine($"    public {fieldType} {fieldName} => {privateFieldName};");
-            }
-            
-            sb.AppendLine();
-        }
-
-        sb.AppendLine("}");
-        sb.AppendLine();
-        sb.AppendLine($"public partial class {configClassName} : ConfigTable<{rowClassName}>");
-        sb.AppendLine("{");
-        sb.AppendLine("}");
-        if (!Directory.Exists(Settings.ClassesOutputFolder))
-        {
-            Directory.CreateDirectory(Settings.ClassesOutputFolder);
-        }
-
-        string filePath = Path.Combine(Settings.ClassesOutputFolder, $"{configClassName}.cs").Replace("\\", "/");
-        File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
-        Debug.Log($"Excel class generation: {filePath}");
+        string parent = Path.GetDirectoryName(folderPath)?.Replace("\\", "/");
+        EnsureAssetFolderExists(parent);
+        AssetDatabase.CreateFolder(parent, Path.GetFileName(folderPath));
     }
 
     private static string GetConfigClassName(string className)
@@ -169,5 +69,19 @@ public sealed partial class ExcelConfigTableGenerator
     private static string GetRowClassName(string className)
     {
         return $"DR{className}";
+    }
+
+    private static string GetCellAddress(int rowIndex, int columnIndex)
+    {
+        int columnNumber = columnIndex + 1;
+        string columnName = string.Empty;
+        while (columnNumber > 0)
+        {
+            columnNumber--;
+            columnName = (char)('A' + columnNumber % 26) + columnName;
+            columnNumber /= 26;
+        }
+
+        return $"{columnName}{rowIndex + 1}";
     }
 }

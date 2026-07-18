@@ -5,18 +5,21 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public sealed partial class ExcelConfigTableGenerator
 {
-    [MenuItem("UniFramework/ConfigTable Generate Assets", false, 21)]
     public static void GenerateAsset()
     {
         if (!Directory.Exists(Settings.ExcelFolder))
         {
-            Debug.LogError($"Excel folder not found: {Settings.ExcelFolder}");
+            Debug.LogError($"Config table folder not found: {Settings.ExcelFolder}");
             return;
         }
 
+        var stopwatch = Stopwatch.StartNew();
+        var statistics = new AssetGenerationStatistics();
+        int workbookCount = 0;
         string[] excelFiles = Directory.GetFiles(Settings.ExcelFolder, "*.xlsx", SearchOption.AllDirectories);
         foreach (string file in excelFiles)
         {
@@ -30,52 +33,100 @@ public sealed partial class ExcelConfigTableGenerator
                 continue;
             }
 
-            GenerateAsset(file.Replace("\\", "/"));
+            workbookCount++;
+            try
+            {
+                statistics.Add(GenerateAssetFile(file.Replace("\\", "/")));
+            }
+            catch (Exception ex)
+            {
+                statistics.FailedAssets++;
+                Debug.LogError($"Failed to read workbook '{Path.GetFileName(file)}': {ex.Message}");
+            }
         }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("Excel asset generation finished.");
-    }
-
-    [MenuItem("UniFramework/ConfigTable Generate Assets", true)]
-    private static bool ValidateGenerateAsset()
-    {
-        return !EditorApplication.isCompiling && !EditorApplication.isUpdating;
+        stopwatch.Stop();
+        LogAssetGenerationSummary(statistics, workbookCount, stopwatch.ElapsedMilliseconds);
     }
 
     public static void GenerateAsset(string path)
     {
         if (EditorApplication.isCompiling || EditorApplication.isUpdating)
         {
-            Debug.LogWarning("Unity 正在编译或刷新资源，禁止生成配置表。");
+            Debug.LogWarning("Unity is compiling or refreshing assets. Config table assets cannot be generated yet.");
             return;
         }
 
         if (!Path.GetExtension(path).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
         {
-            Debug.LogWarning($"Unsupported file extension: {path}");
+            Debug.LogWarning($"Skipped unsupported file: {path}");
             return;
         }
 
+        var stopwatch = Stopwatch.StartNew();
+        var statistics = new AssetGenerationStatistics();
+        try
+        {
+            statistics.Add(GenerateAssetFile(path));
+        }
+        catch (Exception ex)
+        {
+            statistics.FailedAssets++;
+            Debug.LogError($"Failed to read workbook '{Path.GetFileName(path)}': {ex.Message}");
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        stopwatch.Stop();
+        LogAssetGenerationSummary(statistics, 1, stopwatch.ElapsedMilliseconds);
+    }
+
+    private static AssetGenerationStatistics GenerateAssetFile(string path)
+    {
+        var statistics = new AssetGenerationStatistics();
+        string workbookName = Path.GetFileName(path);
         var sheets = XlsxWorkbookReader.Read(path);
+        if (sheets.Count == 0)
+        {
+            statistics.FailedAssets++;
+            Debug.LogError($"Workbook contains no readable worksheets: {workbookName}");
+            return statistics;
+        }
+
         for (int sheetIndex = 0; sheetIndex < sheets.Count; sheetIndex++)
         {
             var sheet = sheets[sheetIndex];
-            Generate(sheet.Name, sheet);
+            if (Generate(workbookName, sheet, out int rowCount, out int skippedRowCount))
+            {
+                statistics.GeneratedAssets++;
+                statistics.GeneratedRows += rowCount;
+            }
+            else
+            {
+                statistics.FailedAssets++;
+            }
+
+            statistics.SkippedRows += skippedRowCount;
         }
+
+        return statistics;
     }
 
-    private static void Generate(string name, XlsxSheetData sheet)
+    private static bool Generate(string workbookName, XlsxSheetData sheet, out int rowCount, out int skippedRowCount)
     {
+        rowCount = 0;
+        skippedRowCount = 0;
         const int fieldRowIndex = 1;
         const int typeRowIndex = 2;
         if (!sheet.HasRow(fieldRowIndex) || !sheet.HasRow(typeRowIndex))
         {
-            return;
+            Debug.LogError($"Invalid worksheet format: {workbookName} / {sheet.Name}. The field name row or field type row is missing.");
+            return false;
         }
 
-        string className = Path.GetFileNameWithoutExtension(name);
+        string className = Path.GetFileNameWithoutExtension(sheet.Name);
         string outputDir = Settings.AssetOutputFolder;
         if (!Directory.Exists(outputDir))
         {
@@ -84,16 +135,15 @@ public sealed partial class ExcelConfigTableGenerator
 
         string assetPath = Path.Combine(outputDir, $"{className}.asset").Replace("\\", "/");
         ScriptableObject soObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(assetPath);
+        bool createAsset = soObject == null;
         if (soObject == null)
         {
             soObject = ScriptableObject.CreateInstance(GetConfigClassName(className));
             if (soObject == null)
             {
-                Debug.LogWarning($"Class not found: {className}");
-                return;
+                Debug.LogError($"Config table type not found: {GetConfigClassName(className)}. Generate the config table classes and wait for Unity to finish compiling.");
+                return false;
             }
-
-            AssetDatabase.CreateAsset(soObject, assetPath);
         }
 
         int firstDataRow = 4;
@@ -111,8 +161,8 @@ public sealed partial class ExcelConfigTableGenerator
 
         if (dataType == null)
         {
-            Debug.LogError($"Data type not found: {GetRowClassName(className)}");
-            return;
+            Debug.LogError($"Config table row type not found: {GetRowClassName(className)}. Source: {workbookName} / {sheet.Name}.");
+            return false;
         }
 
         int colCount = sheet.LastColumnIndex + 1;
@@ -127,12 +177,13 @@ public sealed partial class ExcelConfigTableGenerator
 
         // 缓存字段反射信息，避免重复查找
         var fieldCache = dataType.GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).ToDictionary(f => f.Name, f => f);
+        bool hasErrors = false;
 
         for (int r = firstDataRow; r <= sheet.LastRowIndex; r++)
         {
             if (IsRowEmpty(sheet, r))
             {
-                //Debug.Log($"[Excel] Skip empty row {r}");
+                skippedRowCount++;
                 continue;
             }
 
@@ -162,7 +213,8 @@ public sealed partial class ExcelConfigTableGenerator
 
                 if (!fieldCache.TryGetValue(string.Format("m_{0}", fieldName), out var field))
                 {
-                    Debug.LogWarning($"[Excel] Field '{fieldName}' not found in type {dataType.Name}");
+                    hasErrors = true;
+                    Debug.LogError($"Generated type '{dataType.Name}' does not contain field '{fieldName}'. Source: {workbookName} / {sheet.Name} / {GetCellAddress(fieldRowIndex, c)}.");
                     c++;
                     continue;
                 }
@@ -179,7 +231,6 @@ public sealed partial class ExcelConfigTableGenerator
                         {
                             if (string.IsNullOrWhiteSpace(cell))
                             {
-                                //Debug.Log($"[Excel] ({r},{startCol}) cell is empty or blank.");
                             }
                             else
                             {
@@ -189,7 +240,8 @@ public sealed partial class ExcelConfigTableGenerator
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogError($"[Excel] '{fieldName}' Parse int[] cell ({r},{startCol}) failed: {ex.Message}");
+                            hasErrors = true;
+                            Debug.LogError($"Failed to parse {workbookName} / {sheet.Name} / {GetCellAddress(r, startCol)}: value '{cell}' cannot be converted to int for field '{fieldName}'. {ex.Message}");
                         }
 
                         startCol++;
@@ -202,6 +254,7 @@ public sealed partial class ExcelConfigTableGenerator
                 {
                     string cell = sheet.GetCell(r, c);
                     object value = null;
+                    bool parseSucceeded = true;
 
                     try
                     {
@@ -209,12 +262,19 @@ public sealed partial class ExcelConfigTableGenerator
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError($"[Excel] '{fieldName}' Parse cell ({r},{c}) '{fieldName}' failed: {ex.Message}");
+                        parseSucceeded = false;
+                        hasErrors = true;
+                        Debug.LogError($"Failed to parse {workbookName} / {sheet.Name} / {GetCellAddress(r, c)}: value '{cell}' cannot be converted to {fieldType} for field '{fieldName}'. {ex.Message}");
                     }
 
                     if (value != null)
                     {
                         field.SetValue(dataObj, value);
+                    }
+                    else if (parseSucceeded)
+                    {
+                        hasErrors = true;
+                        Debug.LogError($"Unsupported field type '{fieldType}' at {workbookName} / {sheet.Name} / {GetCellAddress(typeRowIndex, c)} for field '{fieldName}'.");
                     }
 
                     c++;
@@ -224,21 +284,67 @@ public sealed partial class ExcelConfigTableGenerator
             dataList.Add(dataObj);
         }
 
-        var mDataField = soObject.GetType().GetField("Data");
-        if (mDataField != null)
+        if (hasErrors)
         {
-            var typedList = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dataType));
-            for (int i = 0; i < dataList.Count; i++)
-            {
-                typedList.Add(dataList[i]);
-            }
+            Debug.LogError($"Failed to generate config table asset: {workbookName} / {sheet.Name}. The existing asset was not modified.");
+            return false;
+        }
 
-            mDataField.SetValue(soObject, typedList);
+        var mDataField = soObject.GetType().GetField("Data");
+        if (mDataField == null)
+        {
+            Debug.LogError($"Config table type '{soObject.GetType().Name}' does not contain the Data field. Source: {workbookName} / {sheet.Name}.");
+            return false;
+        }
+
+        var typedList = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(dataType));
+        for (int i = 0; i < dataList.Count; i++)
+        {
+            typedList.Add(dataList[i]);
+        }
+
+        mDataField.SetValue(soObject, typedList);
+        if (createAsset)
+        {
+            AssetDatabase.CreateAsset(soObject, assetPath);
         }
 
         EditorUtility.SetDirty(soObject);
-        AssetDatabase.SaveAssets();
-        Debug.Log($"Excel asset generation {assetPath}");
+        rowCount = dataList.Count;
+        Debug.Log($"Generated config table asset: {assetPath}, {rowCount} row(s).", soObject);
+        return true;
+    }
+
+    private static void LogAssetGenerationSummary(AssetGenerationStatistics statistics, int workbookCount, long elapsedMilliseconds)
+    {
+        if (workbookCount == 0)
+        {
+            Debug.LogWarning($"No .xlsx files found in config table folder: {Settings.ExcelFolder}");
+        }
+        else if (statistics.FailedAssets == 0)
+        {
+            Debug.Log($"Config table asset generation succeeded: processed {workbookCount} workbook(s), generated {statistics.GeneratedAssets} asset(s) with {statistics.GeneratedRows} row(s), skipped {statistics.SkippedRows} row(s), elapsed {elapsedMilliseconds} ms.");
+        }
+        else
+        {
+            Debug.LogError($"Config table asset generation completed with errors: {statistics.GeneratedAssets} succeeded, {statistics.FailedAssets} failed, skipped {statistics.SkippedRows} row(s), elapsed {elapsedMilliseconds} ms.");
+        }
+    }
+
+    private sealed class AssetGenerationStatistics
+    {
+        public int GeneratedAssets;
+        public int FailedAssets;
+        public int GeneratedRows;
+        public int SkippedRows;
+
+        public void Add(AssetGenerationStatistics other)
+        {
+            GeneratedAssets += other.GeneratedAssets;
+            FailedAssets += other.FailedAssets;
+            GeneratedRows += other.GeneratedRows;
+            SkippedRows += other.SkippedRows;
+        }
     }
 
     private static object GetCellValue(string cell, string type)

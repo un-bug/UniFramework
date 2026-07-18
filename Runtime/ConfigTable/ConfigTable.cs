@@ -42,7 +42,7 @@ public abstract class ConfigTable<T> : ConfigTableBase, IEnumerable<T> where T :
             return row;
         }
 
-        Debug.LogError($"Config row not found: {typeof(T).Name}, ID: {id}");
+        Debug.LogError($"Config row not found in {GetType().Name}: ID {id}.");
         return null;
     }
 
