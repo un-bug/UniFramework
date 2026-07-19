@@ -75,6 +75,10 @@ namespace UniFramework
         {
         }
 
+        protected internal virtual void OnUpdate(float deltaTime)
+        {
+        }
+
         protected internal virtual void InternalSetVisible(bool visible)
         {
             gameObject.SetActive(visible);

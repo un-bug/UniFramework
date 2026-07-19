@@ -25,6 +25,14 @@ namespace UniFramework
             m_UIPanels.Clear();
         }
 
+        public void Update(float deltaTime)
+        {
+            for (int i = m_UIPanels.Count - 1; i >= 0; i--)
+            {
+                m_UIPanels[i].OnUpdate(deltaTime);
+            }
+        }
+
         public void AddUIPanel(UIPanel uiPanel)
         {
             if (uiPanel == null)

@@ -31,6 +31,14 @@ namespace UniFramework
             m_UIPanelInfo.Clear();
         }
 
+        private void Update()
+        {
+            foreach (KeyValuePair<string, UIGroup> uiGroup in m_UIGroups)
+            {
+                uiGroup.Value?.Update(Time.deltaTime);
+            }
+        }
+
         public void SetUIAssetProvider(IUIAssetProvider uiAssetProvider)
         {
             if (uiAssetProvider == null)

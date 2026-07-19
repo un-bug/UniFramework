@@ -110,5 +110,13 @@ namespace UniFramework
                 m_Logic.OnRefocus(userData);
             }
         }
+
+        public void OnUpdate(float deltaTime)
+        {
+            if (m_Logic)
+            {
+                m_Logic.OnUpdate(deltaTime);
+            }
+        }
     }
 }
