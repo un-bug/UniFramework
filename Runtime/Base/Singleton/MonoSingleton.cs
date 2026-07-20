@@ -5,143 +5,62 @@ namespace UniFramework
     public abstract class MonoSingleton<T> : MonoBehaviour where T : MonoSingleton<T>
     {
         private static T s_Instance;
-
-        private bool m_Initialized;
-        private bool m_Released;
-
         protected virtual bool IsDontDestroyOnLoad => true;
         public static bool HasInstance => s_Instance != null;
+
         public static T Instance
         {
             get
             {
-                if (MonoSingletonRuntime.IsQuitting)
+                if (s_Instance == null)
                 {
-                    Debug.LogWarning($"[MonoSingleton] instance of {typeof(T).Name} requested while application is quitting.");
-                    return null;
+                    s_Instance = FindFirstObjectByType<T>();
+                    if (s_Instance == null)
+                    {
+                        GameObject gameObject = new GameObject($"[{typeof(T).Name}]");
+                        s_Instance = gameObject.AddComponent<T>();
+                    }
                 }
 
-                return GetOrCreateInstance();
+                return s_Instance;
             }
         }
 
-        protected virtual void Awake()
+        private void Awake()
         {
-            if (s_Instance != null && s_Instance != this)
+            if (s_Instance == null)
             {
-                Debug.LogWarning($"[MonoSingleton] duplicate instance of {typeof(T).Name} destroyed.", gameObject);
-                Destroy(gameObject);
+                s_Instance = this as T;
+                if (IsDontDestroyOnLoad)
+                {
+                    DontDestroyOnLoad(gameObject);
+                }
+
+                OnInitialize();
                 return;
             }
 
-            s_Instance = this as T;
-
-            if (IsDontDestroyOnLoad)
+            if (s_Instance != this)
             {
-                Transform root = MonoSingletonRuntime.RootTransform;
-                if (transform.parent != root.transform)
-                {
-                    transform.SetParent(root.transform);
-                }
+                Destroy(gameObject);
             }
-
-            InitSingleton();
-            Debug.Log($"[MonoSingleton] {typeof(T).Name} created.", gameObject);
         }
 
-        protected virtual void OnDestroy()
+        private void OnDestroy()
         {
             if (s_Instance == this)
             {
-                ReleaseSingleton();
                 s_Instance = null;
-                Debug.Log($"[MonoSingleton] {typeof(T).Name} disposed.");
+                OnRelease();
             }
         }
 
-        protected virtual void OnSingletonInit() { }
-
-        protected virtual void OnSingletonRelease() { }
-
-        private void InitSingleton()
+        protected virtual void OnInitialize()
         {
-            if (m_Initialized)
-            {
-                return;
-            }
-
-            OnSingletonInit();
-            m_Initialized = true;
         }
 
-        private void ReleaseSingleton()
+        protected virtual void OnRelease()
         {
-            if (m_Released)
-            {
-                return;
-            }
-
-            m_Released = true;
-            OnSingletonRelease();
-        }
-
-        private static T GetOrCreateInstance()
-        {
-            if (s_Instance != null)
-            {
-                return s_Instance;
-            }
-
-            s_Instance = FindFirstObjectByType<T>();
-
-            if (s_Instance != null)
-            {
-                return s_Instance;
-            }
-
-            GameObject gameObj = new GameObject($"[{typeof(T).Name}]");
-            s_Instance = gameObj.AddComponent<T>();
-            return s_Instance;
-        }
-    }
-
-    static class MonoSingletonRuntime
-    {
-        public const string RootName = "[MonoSingleton]";
-        private static GameObject s_Root;
-        public static bool IsQuitting { get; private set; }
-        public static Transform RootTransform
-        {
-            get
-            {
-                if (s_Root == null)
-                {
-                    s_Root = GameObject.Find(RootName);
-
-                    if (s_Root == null)
-                    {
-                        s_Root = new GameObject(RootName);
-                    }
-
-                    Object.DontDestroyOnLoad(s_Root);
-                }
-
-                return s_Root.transform;
-            }
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetRuntimeState()
-        {
-            IsQuitting = false;
-
-            Application.quitting -= OnApplicationQuitting;
-            Application.quitting += OnApplicationQuitting;
-        }
-
-        private static void OnApplicationQuitting()
-        {
-            IsQuitting = true;
         }
     }
 }
