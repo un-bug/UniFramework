@@ -118,4 +118,88 @@ public static class UnityExtensions
             }
         }
     }
+
+    #region AnimatorExtensions
+
+    /// <summary>
+    /// 播放动画并注册播放完回调。
+    /// </summary>
+    public static void PlayWithCallback(this Animator animator, string stateName, Action onComplete, int layer = 0, float normalizedTime = 0)
+    {
+        if (animator == null)
+        {
+            Debug.LogWarning("Animator is null");
+            return;
+        }
+
+        int stateHash = Animator.StringToHash(stateName);
+        animator.PlayWithCallback(stateHash, onComplete, layer, normalizedTime);
+    }
+
+    /// <summary>
+    /// 播放动画并注册播放完回调。
+    /// </summary>
+    public static void PlayWithCallback(this Animator animator, int stateHash, Action onComplete, int layer = 0, float normalizedTime = 0)
+    {
+        if (animator == null)
+        {
+            Debug.LogWarning("Animator is null");
+            return;
+        }
+
+        animator.Play(stateHash, layer, normalizedTime);
+
+        var runner = animator.GetComponent<AnimationCallbackRunner>();
+        if (runner == null)
+        {
+            runner = animator.gameObject.AddComponent<AnimationCallbackRunner>();
+        }
+
+        runner.Register(animator, layer, stateHash, onComplete);
+    }
+
+    internal class AnimationCallbackRunner : MonoBehaviour
+    {
+        private Coroutine currentRoutine;
+
+        public void Register(Animator animator, int layer, int stateHash, Action onComplete)
+        {
+            if (currentRoutine != null)
+            {
+                StopCoroutine(currentRoutine);
+            }
+
+            currentRoutine = StartCoroutine(WaitForAnimationEnd(animator, layer, stateHash, onComplete));
+        }
+
+        public IEnumerator WaitForAnimationEnd(Animator animator, int layer, int targetStateHash, Action onComplete)
+        {
+            yield return null;
+            bool entered = false;
+            AnimatorStateInfo stateInfo;
+            while (true)
+            {
+                stateInfo = animator.GetCurrentAnimatorStateInfo(layer);
+                if (stateInfo.shortNameHash == targetStateHash)
+                {
+                    entered = true;
+                }
+
+                if (entered && stateInfo.shortNameHash == targetStateHash && stateInfo.normalizedTime >= 1f)
+                {
+                    onComplete?.Invoke();
+                    yield break;
+                }
+
+                if (entered && stateInfo.shortNameHash != targetStateHash)
+                {
+                    yield break;
+                }
+
+                yield return null;
+            }
+        }
+    }
+
+    #endregion
 }
