@@ -123,7 +123,7 @@ namespace UniFramework
             Entity CreateEntity()
             {
                 var handle = m_AssetLoader.LoadAsset<GameObject>(entityAssetKey);
-                GameObject instance = GameObject.Instantiate(handle.Asset, ((MonoBehaviour)Helper).transform);
+                GameObject instance = GameObject.Instantiate(handle.Result, ((MonoBehaviour)Helper).transform);
                 if (instance.TryGetComponent<Entity>(out Entity entity) == false)
                 {
                     entity = instance.AddComponent<Entity>();

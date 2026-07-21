@@ -86,7 +86,7 @@ namespace UniFramework
 
             m_AssetLoader.LoadAssetAsync<AudioClip>(soundAssetName, handle =>
             {
-                AudioClip audioClip = handle.Asset;
+                AudioClip audioClip = handle.Result;
                 if (audioClip == null)
                 {
                     Debug.LogError($"[AudioManager] failed to load audio clip: {soundAssetName}");

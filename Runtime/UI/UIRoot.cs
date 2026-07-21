@@ -75,7 +75,7 @@ namespace UniFramework
             }
 
             var handle = m_AssetLoader.LoadAsset<GameObject>(uiPanelAssetName);
-            var uiPanelAsset = handle.Asset;
+            var uiPanelAsset = handle.Result;
             if (uiPanelAsset == null)
             {
                 Debug.LogError($"[UIRoot] ui panel asset '{uiPanelAssetName}' is not exist.");

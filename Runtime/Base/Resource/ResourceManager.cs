@@ -14,7 +14,7 @@ namespace UniFramework
 
     public interface IAssetHandle<out T> : IAssetHandle where T : UnityEngine.Object
     {
-        T Asset { get; }
+        T Result { get; }
     }
     
     public interface IAssetLoader : IDisposable

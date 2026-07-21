@@ -18,7 +18,7 @@ namespace UniFramework
         
         public T Load<T>(string assetKey) where T : Object
         {
-            return LoadAsset<T>(assetKey).Asset;
+            return LoadAsset<T>(assetKey).Result;
         }
 
         public IAssetHandle<T> LoadAsset<T>(string assetKey) where T : Object

@@ -19,7 +19,7 @@ namespace UniFramework
                 }
             }
 
-            public T Asset
+            public T Result
             {
                 get
                 {

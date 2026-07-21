@@ -34,7 +34,7 @@ namespace UniFramework
             }
 
             var handle = m_AssetLoader.LoadAsset<ConfigTable<T>>(configTableAssetKey);
-            var configTable = handle.Asset;
+            var configTable = handle.Result;
             if (configTable == null)
             {
                 Debug.LogError($"Config table asset not found: {configTableAssetKey}");
