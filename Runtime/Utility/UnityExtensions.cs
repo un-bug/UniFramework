@@ -49,12 +49,14 @@ public static class UnityExtensions
     /// <param name="monoBehaviour">扩展方法的目标 MonoBehaviour，用于启动协程。</param>
     /// <param name="delay">延迟时间（秒）。</param>
     /// <param name="callback">延迟后执行的回调方法。</param>
-    public static void DelayedCall(this MonoBehaviour monoBehaviour, float delay, Action callback)
+    public static Coroutine DelayedCall(this MonoBehaviour monoBehaviour, float delay, Action callback)
     {
         if (monoBehaviour)
         {
-            monoBehaviour.StartCoroutine(DelayCoroutine());
+            return monoBehaviour.StartCoroutine(DelayCoroutine());
         }
+
+        return null;
 
         IEnumerator DelayCoroutine()
         {
