@@ -250,6 +250,21 @@ public sealed partial class ExcelConfigTableGenerator
                     field.SetValue(dataObj, intList.ToArray());
                     c = startCol;
                 }
+                if (fieldType == "string[]")
+                {
+                    var stringList = new List<string>();
+                    int startCol = c;
+                    while (startCol < colCount && (string.IsNullOrEmpty(fieldTypes[startCol]) || fieldTypes[startCol] == fieldType) && fieldNames[startCol] == fieldName)
+                    {
+                        string cell = sheet.GetCell(r, startCol);
+                        string value = cell?.Trim() ?? string.Empty;
+                        stringList.Add(value);
+                        startCol++;
+                    }
+
+                    field.SetValue(dataObj, stringList.ToArray());
+                    c = startCol;
+                }
                 else
                 {
                     string cell = sheet.GetCell(r, c);
