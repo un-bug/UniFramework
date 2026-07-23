@@ -64,6 +64,11 @@ public abstract class ConfigTable<T> : ConfigTableBase, IEnumerable<T> where T :
         return default;
     }
 
+    public List<T> FindAll(Predicate<T> match)
+    {
+        return Data.FindAll(match);
+    }
+
     public bool ContainsId(int id)
     {
         return TryGetById(id, out _);
