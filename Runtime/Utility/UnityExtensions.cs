@@ -123,32 +123,14 @@ public static class UnityExtensions
 
     #region AnimatorExtensions
 
-    /// <summary>
-    /// 播放动画并注册播放完回调。
-    /// </summary>
-    public static void PlayWithCallback(this Animator animator, string stateName, Action onComplete, int layer = 0, float normalizedTime = 0)
+    public static AnimationCallbackHandle PlayWithCallback(this Animator animator, string stateName, Action onComplete, int layer = 0, float normalizedTime = 0)
     {
-        if (animator == null)
-        {
-            Debug.LogWarning("Animator is null");
-            return;
-        }
-
         int stateHash = Animator.StringToHash(stateName);
-        animator.PlayWithCallback(stateHash, onComplete, layer, normalizedTime);
+        return animator.PlayWithCallback(stateHash, onComplete, layer, normalizedTime);
     }
 
-    /// <summary>
-    /// 播放动画并注册播放完回调。
-    /// </summary>
-    public static void PlayWithCallback(this Animator animator, int stateHash, Action onComplete, int layer = 0, float normalizedTime = 0)
+    public static AnimationCallbackHandle PlayWithCallback(this Animator animator, int stateHash, Action onComplete, int layer = 0, float normalizedTime = 0)
     {
-        if (animator == null)
-        {
-            Debug.LogWarning("Animator is null");
-            return;
-        }
-
         animator.Play(stateHash, layer, normalizedTime);
 
         var runner = animator.GetComponent<AnimationCallbackRunner>();
@@ -157,51 +139,91 @@ public static class UnityExtensions
             runner = animator.gameObject.AddComponent<AnimationCallbackRunner>();
         }
 
-        runner.Register(animator, layer, stateHash, onComplete);
-    }
-
-    internal class AnimationCallbackRunner : MonoBehaviour
-    {
-        private Coroutine currentRoutine;
-
-        public void Register(Animator animator, int layer, int stateHash, Action onComplete)
-        {
-            if (currentRoutine != null)
-            {
-                StopCoroutine(currentRoutine);
-            }
-
-            currentRoutine = StartCoroutine(WaitForAnimationEnd(animator, layer, stateHash, onComplete));
-        }
-
-        public IEnumerator WaitForAnimationEnd(Animator animator, int layer, int targetStateHash, Action onComplete)
-        {
-            yield return null;
-            bool entered = false;
-            AnimatorStateInfo stateInfo;
-            while (true)
-            {
-                stateInfo = animator.GetCurrentAnimatorStateInfo(layer);
-                if (stateInfo.shortNameHash == targetStateHash)
-                {
-                    entered = true;
-                }
-
-                if (entered && stateInfo.shortNameHash == targetStateHash && stateInfo.normalizedTime >= 1f)
-                {
-                    onComplete?.Invoke();
-                    yield break;
-                }
-
-                if (entered && stateInfo.shortNameHash != targetStateHash)
-                {
-                    yield break;
-                }
-
-                yield return null;
-            }
-        }
+        return runner.Register(animator, layer, stateHash, onComplete);
     }
 
     #endregion
+
+}
+
+public sealed class AnimationCallbackHandle
+{
+    private Action m_Cancel;
+
+    internal AnimationCallbackHandle(Action cancel)
+    {
+        m_Cancel = cancel;
+    }
+
+    public void Cancel()
+    {
+        m_Cancel?.Invoke();
+        m_Cancel = null;
+    }
+
+    internal void Complete()
+    {
+        m_Cancel = null;
+    }
+}
+
+internal sealed class AnimationCallbackRunner : MonoBehaviour
+{
+    private readonly Dictionary<int, Coroutine> m_Routines = new Dictionary<int, Coroutine>();
+
+    public AnimationCallbackHandle Register(Animator animator, int layer, int stateHash, Action onComplete)
+    {
+        Cancel(layer);
+
+        AnimationCallbackHandle handle = null;
+        Coroutine routine = StartCoroutine(WaitForAnimationEnd(animator, layer, stateHash, onComplete, () => handle?.Complete()));
+        m_Routines[layer] = routine;
+
+        handle = new AnimationCallbackHandle(() => Cancel(layer));
+        return handle;
+    }
+
+    private void Cancel(int layer)
+    {
+        if (!m_Routines.Remove(layer, out Coroutine routine))
+        {
+            return;
+        }
+
+        StopCoroutine(routine);
+    }
+
+    private IEnumerator WaitForAnimationEnd(Animator animator, int layer, int targetStateHash, Action onComplete, Action onFinished)
+    {
+        yield return null;
+
+        bool entered = false;
+
+        while (true)
+        {
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(layer);
+
+            if (stateInfo.shortNameHash == targetStateHash)
+            {
+                entered = true;
+            }
+
+            if (entered && stateInfo.shortNameHash == targetStateHash && stateInfo.normalizedTime >= 1f)
+            {
+                m_Routines.Remove(layer);
+                onFinished?.Invoke();
+                onComplete?.Invoke();
+                yield break;
+            }
+
+            if (entered && stateInfo.shortNameHash != targetStateHash)
+            {
+                m_Routines.Remove(layer);
+                onFinished?.Invoke();
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
 }
