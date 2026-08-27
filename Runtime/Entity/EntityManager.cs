@@ -37,6 +37,28 @@ namespace UniFramework
             }
         }
 
+        public Entity[] GetAllEntities()
+        {
+            List<Entity> entities = new List<Entity>();
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            {
+                entities.AddRange(entityGroup.Entities);
+            }
+
+            return entities.ToArray();
+        }
+
+        public void GetAllEntities(List<Entity> results)
+        {
+            if (results == null)
+            {
+                return;
+            }
+
+            results.Clear();
+            GetAllEntities(results);
+        }
+
         public EntityGroup GetEntityGroup(string entityGroupName)
         {
             if (m_EntityGroups.TryGetValue(entityGroupName, out var entityGroup))

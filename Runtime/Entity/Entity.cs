@@ -55,7 +55,14 @@ namespace UniFramework
 
         public void OnHide(object userData)
         {
-            EntityLogic.OnHide(userData);
+            try
+            {
+                EntityLogic.OnHide(userData);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
         }
 
         public void OnUpdate(float deltaTime)
