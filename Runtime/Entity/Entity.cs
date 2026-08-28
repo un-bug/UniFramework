@@ -37,17 +37,6 @@ namespace UniFramework
             EntityLogic.OnInit(userData);
         }
 
-        public void OnRecycle()
-        {
-            EntityLogic.OnRecycle();
-            if (EntityLogic != null)
-            {
-                EntityLogic.enabled = false;
-            }
-
-            Id = 0;
-        }
-
         public void OnShow(object userData)
         {
             EntityLogic.OnShow(userData);
@@ -63,6 +52,13 @@ namespace UniFramework
             {
                 Debug.LogException(ex);
             }
+        }
+
+        public void OnRecycle()
+        {
+            EntityLogic.OnRecycle();
+            EntityLogic.enabled = false;
+            Id = 0;
         }
 
         public void OnUpdate(float deltaTime)
