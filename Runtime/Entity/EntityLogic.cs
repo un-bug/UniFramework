@@ -29,10 +29,6 @@ namespace UniFramework
             Entity = GetComponent<Entity>();
         }
 
-        protected internal virtual void OnRecycle()
-        {
-        }
-
         protected internal virtual void OnShow(object userData)
         {
             Visible = true;
@@ -41,6 +37,10 @@ namespace UniFramework
         protected internal virtual void OnHide(object userData)
         {
             Visible = false;
+        }
+
+        protected internal virtual void OnRecycle()
+        {
         }
 
         protected internal virtual void OnUpdate(float deltaTime)
