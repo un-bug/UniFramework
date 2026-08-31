@@ -37,6 +37,35 @@ namespace UniFramework
             }
         }
 
+        public bool HasEntity(int entityId)
+        {
+            return TryGetEntity(entityId, out _);
+        }
+
+        public Entity GetEntity(int entityId)
+        {
+            TryGetEntity(entityId, out Entity entity);
+            return entity;
+        }
+
+        public bool TryGetEntity(int entityId, out Entity entity)
+        {
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            {
+                foreach (Entity current in entityGroup.Entities)
+                {
+                    if (current.Id == entityId)
+                    {
+                        entity = current;
+                        return true;
+                    }
+                }
+            }
+
+            entity = null;
+            return false;
+        }
+
         public Entity[] GetAllEntities()
         {
             List<Entity> entities = new List<Entity>();
@@ -56,7 +85,10 @@ namespace UniFramework
             }
 
             results.Clear();
-            GetAllEntities(results);
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            {
+                results.AddRange(entityGroup.Entities);
+            }
         }
 
         public EntityGroup GetEntityGroup(string entityGroupName)
