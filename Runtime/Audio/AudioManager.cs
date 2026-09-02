@@ -200,6 +200,7 @@ namespace UniFramework
             audioSource.pitch = playSoundParams.Pitch;
             audioSource.loop = playSoundParams.Loop;
             audioSource.spatialBlend = playSoundParams.SpatialBlend;
+            audioSource.panStereo = playSoundParams.PanStereo;
             audioSource.Play();
 
             if (!m_PlayingAudioSources.TryAdd(serialId, audioSource))

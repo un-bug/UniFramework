@@ -30,6 +30,12 @@ namespace UniFramework
         public float SpatialBlend;
 
         /// <summary>
+        /// 立体声声像位置 (-1.0 ~ 1.0)。
+        /// -1 表示完全左声道，0 表示居中，1 表示完全右声道。
+        /// </summary>
+        public float PanStereo;
+
+        /// <summary>
         /// 获取一个 <see cref="PlaySoundParams"/> 的默认参数配置。
         /// </summary>
         public static PlaySoundParams Default => new PlaySoundParams
@@ -38,7 +44,8 @@ namespace UniFramework
             Loop = false,
             Pitch = 1.0f,
             FadeInSeconds = 0f,
-            SpatialBlend = 0f
+            SpatialBlend = 0f,
+            PanStereo = 0f
         };
     }
 }
