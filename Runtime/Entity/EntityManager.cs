@@ -176,6 +176,22 @@ namespace UniFramework
             InternalHideEntity(entity, false, userData);
         }
 
+        public void HideAllEntities()
+        {
+            HideAllEntities(null);
+        }
+
+        public void HideAllEntities(object userData)
+        {
+            foreach (EntityGroup entityGroup in m_EntityGroups.Values)
+            {
+                foreach (Entity entity in entityGroup.GetAllEntities())
+                {
+                    InternalHideEntity(entity, false, userData);
+                }
+            }
+        }
+
         private Entity InternalShowEntity(int entityId, Type entityLogicType, string entityAssetKey, EntityGroup entityGroup, object userData)
         {
             Entity entity = entityGroup.SpawnEntity(entityAssetKey);
