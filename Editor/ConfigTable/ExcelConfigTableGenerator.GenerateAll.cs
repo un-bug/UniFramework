@@ -31,7 +31,6 @@ public sealed partial class ExcelConfigTableGenerator
         }
 
         SessionState.SetBool(GenerateAllPendingKey, true);
-        Debug.Log("Config table generation started. Generating classes first.");
         GenerateClass();
         EditorApplication.delayCall += ResumeGenerateAll;
     }
@@ -56,7 +55,6 @@ public sealed partial class ExcelConfigTableGenerator
         }
 
         SessionState.EraseBool(GenerateAllPendingKey);
-        Debug.Log("Config table scripts are ready. Continuing with asset generation.");
         GenerateAsset();
     }
 }

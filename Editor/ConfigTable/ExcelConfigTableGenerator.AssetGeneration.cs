@@ -219,50 +219,48 @@ public sealed partial class ExcelConfigTableGenerator
                     continue;
                 }
 
-                if (fieldType == "int[]")
+                if (field.FieldType.IsArray)
                 {
-                    var intList = new List<int>();
+                    Type elementType = field.FieldType.GetElementType();
+                    var values = new List<object>();
                     int startCol = c;
                     while (startCol < colCount && (string.IsNullOrEmpty(fieldTypes[startCol]) || fieldTypes[startCol] == fieldType) && fieldNames[startCol] == fieldName)
                     {
                         string cell = sheet.GetCell(r, startCol);
-                        int value = 0;
-                        try
+                        string[] arrayItems = cell.Split('|');
+                        for (int itemIndex = 0; itemIndex < arrayItems.Length; itemIndex++)
                         {
-                            if (string.IsNullOrWhiteSpace(cell))
+                            string item = arrayItems[itemIndex].Trim();
+                            try
                             {
+                                if (elementType == typeof(string) || !string.IsNullOrEmpty(item))
+                                {
+                                    object value = GetCellValue(item, elementType);
+                                    if (value == null)
+                                    {
+                                        throw new NotSupportedException($"Array element type '{elementType.Name}' is not supported.");
+                                    }
+
+                                    values.Add(value);
+                                }
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                value = Convert.ToInt32(GetCellValue(cell, "int"));
-                                intList.Add(value);
+                                hasErrors = true;
+                                Debug.LogError($"Failed to parse {workbookName} / {sheet.Name} / {GetCellAddress(r, startCol)}: array item '{item}' cannot be converted to {elementType.Name} for field '{fieldName}'. {ex.Message}");
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            hasErrors = true;
-                            Debug.LogError($"Failed to parse {workbookName} / {sheet.Name} / {GetCellAddress(r, startCol)}: value '{cell}' cannot be converted to int for field '{fieldName}'. {ex.Message}");
                         }
 
                         startCol++;
                     }
 
-                    field.SetValue(dataObj, intList.ToArray());
-                    c = startCol;
-                }
-                if (fieldType == "string[]")
-                {
-                    var stringList = new List<string>();
-                    int startCol = c;
-                    while (startCol < colCount && (string.IsNullOrEmpty(fieldTypes[startCol]) || fieldTypes[startCol] == fieldType) && fieldNames[startCol] == fieldName)
+                    Array array = Array.CreateInstance(elementType, values.Count);
+                    for (int i = 0; i < values.Count; i++)
                     {
-                        string cell = sheet.GetCell(r, startCol);
-                        string value = cell?.Trim() ?? string.Empty;
-                        stringList.Add(value);
-                        startCol++;
+                        array.SetValue(values[i], i);
                     }
 
-                    field.SetValue(dataObj, stringList.ToArray());
+                    field.SetValue(dataObj, array);
                     c = startCol;
                 }
                 else
@@ -273,7 +271,7 @@ public sealed partial class ExcelConfigTableGenerator
 
                     try
                     {
-                        value = GetCellValue(cell, fieldType);
+                        value = GetCellValue(cell, field.FieldType);
                     }
                     catch (Exception ex)
                     {
@@ -326,7 +324,6 @@ public sealed partial class ExcelConfigTableGenerator
 
         EditorUtility.SetDirty(soObject);
         rowCount = dataList.Count;
-        Debug.Log($"Generated config table asset: {assetPath}, {rowCount} row(s).", soObject);
         return true;
     }
 
@@ -362,36 +359,189 @@ public sealed partial class ExcelConfigTableGenerator
         }
     }
 
-    private static object GetCellValue(string cell, string type)
+    private static object GetCellValue(string cell, Type type)
     {
         cell = cell?.Trim() ?? string.Empty;
-        switch (type)
+        if (type == typeof(int))
         {
-            case "int":
-                return string.IsNullOrEmpty(cell) ? 0 : Convert.ToInt32(double.Parse(cell, CultureInfo.InvariantCulture));
-
-            case "float":
-                return string.IsNullOrEmpty(cell) ? 0f : float.Parse(cell, CultureInfo.InvariantCulture);
-
-            case "string":
-                return cell;
-
-            case "bool":
-                if (string.IsNullOrEmpty(cell))
-                {
-                    return false;
-                }
-
-                if (bool.TryParse(cell, out bool boolValue))
-                {
-                    return boolValue;
-                }
-
-                return double.Parse(cell, CultureInfo.InvariantCulture) != 0d;
-
-            default:
-                return null;
+            return string.IsNullOrEmpty(cell) ? 0 : Convert.ToInt32(double.Parse(cell, CultureInfo.InvariantCulture));
         }
+
+        if (type == typeof(float))
+        {
+            return string.IsNullOrEmpty(cell) ? 0f : float.Parse(cell, CultureInfo.InvariantCulture);
+        }
+
+        if (type == typeof(long))
+        {
+            return string.IsNullOrEmpty(cell) ? 0L : long.Parse(cell, NumberStyles.Integer, CultureInfo.InvariantCulture);
+        }
+
+        if (type == typeof(string))
+        {
+            return cell;
+        }
+
+        if (type == typeof(bool))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return false;
+            }
+
+            if (bool.TryParse(cell, out bool boolValue))
+            {
+                return boolValue;
+            }
+
+            return double.Parse(cell, CultureInfo.InvariantCulture) != 0d;
+        }
+
+        if (type.IsEnum)
+        {
+            return string.IsNullOrEmpty(cell) ? Activator.CreateInstance(type) : Enum.Parse(type, cell, true);
+        }
+
+        if (type == typeof(Vector2))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return default(Vector2);
+            }
+
+            float[] values = ParseFloatComponents(cell, 2);
+            return new Vector2(values[0], values[1]);
+        }
+
+        if (type == typeof(Vector3))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return default(Vector3);
+            }
+
+            float[] values = ParseFloatComponents(cell, 3);
+            return new Vector3(values[0], values[1], values[2]);
+        }
+
+        if (type == typeof(Vector2Int))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return default(Vector2Int);
+            }
+
+            int[] values = ParseIntComponents(cell, 2);
+            return new Vector2Int(values[0], values[1]);
+        }
+
+        if (type == typeof(Vector3Int))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return default(Vector3Int);
+            }
+
+            int[] values = ParseIntComponents(cell, 3);
+            return new Vector3Int(values[0], values[1], values[2]);
+        }
+
+        if (type == typeof(Color))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return default(Color);
+            }
+
+            if (cell.StartsWith("#", StringComparison.Ordinal))
+            {
+                if (ColorUtility.TryParseHtmlString(cell, out Color color))
+                {
+                    return color;
+                }
+
+                throw new FormatException($"'{cell}' is not a valid HTML color.");
+            }
+
+            float[] values = ParseFloatComponents(cell, 3, 4);
+            return new Color(values[0], values[1], values[2], values.Length == 4 ? values[3] : 1f);
+        }
+
+        if (type == typeof(Color32))
+        {
+            if (string.IsNullOrEmpty(cell))
+            {
+                return default(Color32);
+            }
+
+            if (cell.StartsWith("#", StringComparison.Ordinal))
+            {
+                if (ColorUtility.TryParseHtmlString(cell, out Color color))
+                {
+                    return (Color32)color;
+                }
+
+                throw new FormatException($"'{cell}' is not a valid HTML color.");
+            }
+
+            byte[] values = ParseByteComponents(cell, 3, 4);
+            return new Color32(values[0], values[1], values[2], values.Length == 4 ? values[3] : byte.MaxValue);
+        }
+
+        return null;
+    }
+
+    private static float[] ParseFloatComponents(string cell, int expectedCount)
+    {
+        return ParseFloatComponents(cell, expectedCount, expectedCount);
+    }
+
+    private static float[] ParseFloatComponents(string cell, int minimumCount, int maximumCount)
+    {
+        string[] components = SplitComponents(cell, minimumCount, maximumCount);
+        var values = new float[components.Length];
+        for (int i = 0; i < components.Length; i++)
+        {
+            values[i] = float.Parse(components[i], CultureInfo.InvariantCulture);
+        }
+
+        return values;
+    }
+
+    private static int[] ParseIntComponents(string cell, int expectedCount)
+    {
+        string[] components = SplitComponents(cell, expectedCount, expectedCount);
+        var values = new int[components.Length];
+        for (int i = 0; i < components.Length; i++)
+        {
+            values[i] = int.Parse(components[i], NumberStyles.Integer, CultureInfo.InvariantCulture);
+        }
+
+        return values;
+    }
+
+    private static byte[] ParseByteComponents(string cell, int minimumCount, int maximumCount)
+    {
+        string[] components = SplitComponents(cell, minimumCount, maximumCount);
+        var values = new byte[components.Length];
+        for (int i = 0; i < components.Length; i++)
+        {
+            values[i] = byte.Parse(components[i], NumberStyles.Integer, CultureInfo.InvariantCulture);
+        }
+
+        return values;
+    }
+
+    private static string[] SplitComponents(string cell, int minimumCount, int maximumCount)
+    {
+        string[] components = cell.Split(',');
+        if (components.Length < minimumCount || components.Length > maximumCount)
+        {
+            string expectedRange = minimumCount == maximumCount ? minimumCount.ToString() : $"{minimumCount}-{maximumCount}";
+            throw new FormatException($"Expected {expectedRange} comma-separated components, but found {components.Length}.");
+        }
+
+        return components;
     }
 
     private static bool IsRowEmpty(XlsxSheetData sheet, int rowIndex)

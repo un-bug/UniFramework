@@ -52,11 +52,7 @@ public sealed partial class ExcelConfigTableGenerator
         {
             Debug.LogWarning($"No .xlsx files found in config table folder: {Settings.ExcelFolder}");
         }
-        else if (failedCount == 0)
-        {
-            Debug.Log($"Config table class generation succeeded: processed {workbookCount} workbook(s), generated {generatedCount} file(s), elapsed {stopwatch.ElapsedMilliseconds} ms.");
-        }
-        else
+        else if (failedCount > 0)
         {
             Debug.LogError($"Config table class generation completed with errors: {generatedCount} succeeded, {failedCount} failed, elapsed {stopwatch.ElapsedMilliseconds} ms.");
         }
@@ -177,7 +173,6 @@ public sealed partial class ExcelConfigTableGenerator
 
         string filePath = Path.Combine(Settings.ClassesOutputFolder, $"{configClassName}.cs").Replace("\\", "/");
         File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
-        Debug.Log($"Generated config table class: {filePath}");
         return true;
     }
 
