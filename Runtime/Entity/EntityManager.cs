@@ -106,7 +106,7 @@ namespace UniFramework
             return m_EntityGroups.ContainsKey(entityGroupName);
         }
 
-        public bool AddEntityGroup(string entityGroupName, IEntityGroupHelper entityGroupHelper)
+        public bool AddEntityGroup(string entityGroupName, Transform InstanceRoot)
         {
             if (string.IsNullOrEmpty(entityGroupName))
             {
@@ -118,7 +118,7 @@ namespace UniFramework
                 return false;
             }
 
-            m_EntityGroups.Add(entityGroupName, new EntityGroup(entityGroupName, entityGroupHelper));
+            m_EntityGroups.Add(entityGroupName, new EntityGroup(entityGroupName, InstanceRoot));
             return true;
         }
 

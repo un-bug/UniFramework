@@ -5,10 +5,6 @@ using UnityEngine.Pool;
 
 namespace UniFramework
 {
-    public interface IEntityGroupHelper
-    {
-    }
-
     public class EntityGroup
     {
         private readonly Dictionary<string, ObjectPool<Entity>> m_EntityPools;
@@ -16,13 +12,13 @@ namespace UniFramework
         private LinkedListNode<Entity> m_CachedNode;
         private IAssetLoader m_AssetLoader;
         public string Name { get; private set; }
-        public IEntityGroupHelper Helper { get; private set; }
+        public Transform InstanceRoot { get; private set; }
         public LinkedList<Entity> Entities { get; private set; }
 
-        public EntityGroup(string name, IEntityGroupHelper entityGroupHelper)
+        public EntityGroup(string name, Transform entityGroupHelper)
         {
             Name = name;
-            Helper = entityGroupHelper;
+            InstanceRoot = entityGroupHelper;
             Entities = new LinkedList<Entity>();
             m_EntityPools = new Dictionary<string, ObjectPool<Entity>>();
             m_ReleaseAssetHandles = new Dictionary<Entity, Action>();
@@ -31,7 +27,7 @@ namespace UniFramework
 
         public void Shutdown()
         {
-            Helper = null;
+            InstanceRoot = null;
             Entities.Clear();
             foreach (ObjectPool<Entity> entityPool in m_EntityPools.Values)
             {
@@ -86,7 +82,7 @@ namespace UniFramework
 
         public Entity SpawnEntity(string entityAssetKey)
         {
-            if (Helper == null)
+            if (InstanceRoot == null)
             {
                 throw new Exception("EntityGroupHelper is invalid.");
             }
@@ -123,7 +119,7 @@ namespace UniFramework
             Entity CreateEntity()
             {
                 var handle = m_AssetLoader.LoadAsset<GameObject>(entityAssetKey);
-                GameObject instance = GameObject.Instantiate(handle.Result, ((MonoBehaviour)Helper).transform);
+                GameObject instance = GameObject.Instantiate(handle.Result, InstanceRoot);
                 if (instance.TryGetComponent<Entity>(out Entity entity) == false)
                 {
                     entity = instance.AddComponent<Entity>();
