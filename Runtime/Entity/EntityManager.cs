@@ -6,6 +6,9 @@ namespace UniFramework
 {
     public sealed partial class EntityManager : GameModule
     {
+        public event Action<Entity> EntityShown;
+        public event Action<Entity> EntityHidden;
+
         private Dictionary<string, EntityGroup> m_EntityGroups;
         private Queue<Entity> m_RecycleQueue;
 
@@ -197,6 +200,7 @@ namespace UniFramework
             Entity entity = entityGroup.SpawnEntity(entityAssetKey);
             entity.OnInit(entityId, entityLogicType, entityAssetKey, entityGroup, userData);
             entity.OnShow(userData);
+            EntityShown?.Invoke(entity);
             return entity;
         }
 
@@ -210,6 +214,7 @@ namespace UniFramework
 
             entity.OnHide(userData);
             entityGroup.RemoveEntity(entity);
+            EntityHidden?.Invoke(entity);
             if (recycleImmediately)
             {
                 RecycleEntity(entity, entityGroup);
