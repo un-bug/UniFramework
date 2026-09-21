@@ -6,6 +6,9 @@ namespace UniFramework
     {
         private bool m_Visible = false;
         public Entity Entity { get; private set; }
+        public int OriginalLayer { get; private set; }
+        public Transform CachedTransform { get; private set; }
+        public Transform OriginalParent { get; private set; }
         public bool Visible
         {
             get
@@ -27,6 +30,9 @@ namespace UniFramework
         protected internal virtual void OnInit(object userData)
         {
             Entity = GetComponent<Entity>();
+            CachedTransform = transform;
+            OriginalLayer = gameObject.layer;
+            OriginalParent = transform.parent;
         }
 
         protected internal virtual void OnShow(object userData)
@@ -36,6 +42,7 @@ namespace UniFramework
 
         protected internal virtual void OnHide(object userData)
         {
+            gameObject.SetLayerRecursively(OriginalLayer);
             Visible = false;
         }
 
