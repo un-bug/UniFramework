@@ -138,13 +138,22 @@ namespace UniFramework
                 return false;
             }
 
-            foreach (Entity entity in entityGroup.GetAllEntities())
+            m_EntityGroups.Remove(entityGroupName);
+            try
             {
-                InternalHideEntity(entity, true, null);
+                foreach (Entity entity in entityGroup.GetAllEntities())
+                {
+                    if (entity != null)
+                    {
+                        InternalHideEntity(entity, true, null);
+                    }
+                }
+            }
+            finally
+            {
+                entityGroup.Shutdown();
             }
 
-            entityGroup.Shutdown();
-            m_EntityGroups.Remove(entityGroupName);
             return true;
         }
 
@@ -230,6 +239,11 @@ namespace UniFramework
             while (m_RecycleQueue.Count > 0)
             {
                 Entity entity = m_RecycleQueue.Dequeue();
+                if (entity == null)
+                {
+                    continue;
+                }
+
                 EntityGroup entityGroup = entity.EntityGroup;
                 if (entityGroup == null)
                 {

@@ -147,7 +147,7 @@ namespace UniFramework
                     releaseHandle.Invoke();
                 }
 
-                if (entity.gameObject)
+                if (entity)
                 {
                     GameObject.Destroy(entity.gameObject);
                 }
